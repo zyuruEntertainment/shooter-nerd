@@ -1,128 +1,63 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
-using System.Collections;
 
 public class MobileInput : MonoBehaviour,
     IPointerDownHandler,
     IDragHandler,
     IPointerUpHandler
 {
-    [Header("Joystick")]
-    [SerializeField] private RectTransform touchArea;
+    [Header("Joystick Reader")]
     [SerializeField] private RectTransform joystickBackground;
     [SerializeField] private RectTransform joystickHandle;
-
-    [Header("Joystick Settings")]
-    [SerializeField] private float handleRange = 60f;
-    [SerializeField] private float hideDelay = 1f;
+    [SerializeField, Min(1f)] private float handleRange = 60f;
 
     [Header("Camera Look")]
     [SerializeField] private RectTransform lookArea;
-    [SerializeField] private float lookMultiplier = 1f;
+    [SerializeField, Min(0f)] private float lookMultiplier = 1f;
 
-    private Vector2 moveInput;
     private Vector2 lookInput;
-
-    private int joystickPointerId = int.MinValue;
     private int lookPointerId = int.MinValue;
 
-    private Coroutine hideCoroutine;
-
-    public Vector2 MoveInput => moveInput;
-
-    private void Awake()
+    public Vector2 MoveInput
     {
-        joystickBackground.gameObject.SetActive(false);
-        joystickHandle.anchoredPosition = Vector2.zero;
+        get
+        {
+            if (joystickBackground == null ||
+                joystickHandle == null ||
+                !joystickBackground.gameObject.activeInHierarchy)
+                return Vector2.zero;
+
+            return Vector2.ClampMagnitude(
+                joystickHandle.anchoredPosition /
+                Mathf.Max(handleRange, 1f),
+                1f
+            );
+        }
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (IsInside(touchArea, eventData) &&
-            joystickPointerId == int.MinValue)
-        {
-            joystickPointerId = eventData.pointerId;
+        if (lookPointerId != int.MinValue)
+            return;
 
-            if (hideCoroutine != null)
-            {
-                StopCoroutine(hideCoroutine);
-                hideCoroutine = null;
-            }
-
-            RectTransform parent =
-                joystickBackground.parent as RectTransform;
-
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                parent,
-                eventData.position,
-                eventData.pressEventCamera,
-                out Vector2 localPoint))
-            {
-                joystickBackground.anchoredPosition = localPoint;
-                joystickBackground.gameObject.SetActive(true);
-            }
-
-            joystickHandle.anchoredPosition = Vector2.zero;
-            moveInput = Vector2.zero;
-        }
-
-        if (IsInside(lookArea, eventData) &&
-            lookPointerId == int.MinValue)
-        {
+        if (IsInsideLookArea(eventData))
             lookPointerId = eventData.pointerId;
-        }
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (eventData.pointerId == joystickPointerId)
-        {
-            UpdateJoystick(eventData);
-        }
+        if (eventData.pointerId != lookPointerId)
+            return;
 
-        if (eventData.pointerId == lookPointerId)
-        {
-            lookInput += eventData.delta * lookMultiplier;
-        }
+        lookInput += eventData.delta * lookMultiplier;
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        if (eventData.pointerId == joystickPointerId)
-        {
-            joystickPointerId = int.MinValue;
-
-            moveInput = Vector2.zero;
-            joystickHandle.anchoredPosition = Vector2.zero;
-
-            if (hideCoroutine != null)
-                StopCoroutine(hideCoroutine);
-
-            hideCoroutine = StartCoroutine(HideJoystick());
-        }
-
-        if (eventData.pointerId == lookPointerId)
-        {
-            lookPointerId = int.MinValue;
-        }
-    }
-
-    private void UpdateJoystick(PointerEventData eventData)
-    {
-        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            joystickBackground,
-            eventData.position,
-            eventData.pressEventCamera,
-            out Vector2 localPoint))
+        if (eventData.pointerId != lookPointerId)
             return;
 
-        moveInput = Vector2.ClampMagnitude(
-            localPoint / handleRange,
-            1f
-        );
-
-        joystickHandle.anchoredPosition =
-            moveInput * handleRange;
+        lookPointerId = int.MinValue;
     }
 
     public Vector2 ConsumeLookInput()
@@ -132,23 +67,11 @@ public class MobileInput : MonoBehaviour,
         return result;
     }
 
-    private IEnumerator HideJoystick()
+    private bool IsInsideLookArea(PointerEventData eventData)
     {
-        yield return new WaitForSeconds(hideDelay);
-
-        if (joystickPointerId == int.MinValue)
-            joystickBackground.gameObject.SetActive(false);
-
-        hideCoroutine = null;
-    }
-
-    private bool IsInside(
-        RectTransform area,
-        PointerEventData eventData)
-    {
-        return area != null &&
+        return lookArea != null &&
             RectTransformUtility.RectangleContainsScreenPoint(
-                area,
+                lookArea,
                 eventData.position,
                 eventData.pressEventCamera
             );
@@ -156,19 +79,7 @@ public class MobileInput : MonoBehaviour,
 
     private void OnDisable()
     {
-        joystickPointerId = int.MinValue;
         lookPointerId = int.MinValue;
-
-        moveInput = Vector2.zero;
         lookInput = Vector2.zero;
-
-        if (hideCoroutine != null)
-        {
-            StopCoroutine(hideCoroutine);
-            hideCoroutine = null;
-        }
-
-        if (joystickBackground != null)
-            joystickBackground.gameObject.SetActive(false);
     }
 }

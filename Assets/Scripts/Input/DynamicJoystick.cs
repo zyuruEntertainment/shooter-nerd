@@ -8,6 +8,7 @@ public class DynamicJoystick : MonoBehaviour,
     IPointerUpHandler
 {
     [Header("References")]
+    [SerializeField] private RectTransform touchArea;
     [SerializeField] private RectTransform background;
     [SerializeField] private RectTransform handle;
 
@@ -19,15 +20,11 @@ public class DynamicJoystick : MonoBehaviour,
     private int activeFingerId = int.MinValue;
     private Coroutine hideCoroutine;
 
-    private Vector2 input;
-
-    public Vector2 Direction => input;
-
     private void Awake()
     {
-        if (background == null || handle == null)
+        if (touchArea == null || background == null || handle == null)
         {
-            Debug.LogError("DynamicJoystick: Background atau Handle belum diatur!", this);
+            Debug.LogError("DynamicJoystick: Referensi belum lengkap!", this);
             enabled = false;
             return;
         }
@@ -36,7 +33,7 @@ public class DynamicJoystick : MonoBehaviour,
 
         if (backgroundParent == null)
         {
-            Debug.LogError("DynamicJoystick: Background harus memiliki RectTransform parent!", this);
+            Debug.LogError("DynamicJoystick: Background harus memiliki parent RectTransform!", this);
             enabled = false;
             return;
         }
@@ -50,6 +47,19 @@ public class DynamicJoystick : MonoBehaviour,
         if (activeFingerId != int.MinValue)
             return;
 
+        if (!RectTransformUtility.RectangleContainsScreenPoint(
+            touchArea,
+            eventData.position,
+            eventData.pressEventCamera))
+            return;
+
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            backgroundParent,
+            eventData.position,
+            eventData.pressEventCamera,
+            out Vector2 localPoint))
+            return;
+
         activeFingerId = eventData.pointerId;
 
         if (hideCoroutine != null)
@@ -58,21 +68,9 @@ public class DynamicJoystick : MonoBehaviour,
             hideCoroutine = null;
         }
 
-        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            backgroundParent,
-            eventData.position,
-            eventData.pressEventCamera,
-            out Vector2 localPoint))
-        {
-            activeFingerId = int.MinValue;
-            return;
-        }
-
         background.anchoredPosition = localPoint;
         background.gameObject.SetActive(true);
-
         handle.anchoredPosition = Vector2.zero;
-        input = Vector2.zero;
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -80,7 +78,15 @@ public class DynamicJoystick : MonoBehaviour,
         if (eventData.pointerId != activeFingerId)
             return;
 
-        UpdateJoystick(eventData);
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            background,
+            eventData.position,
+            eventData.pressEventCamera,
+            out Vector2 localPoint))
+            return;
+
+        handle.anchoredPosition =
+            Vector2.ClampMagnitude(localPoint, handleRange);
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -89,8 +95,6 @@ public class DynamicJoystick : MonoBehaviour,
             return;
 
         activeFingerId = int.MinValue;
-
-        input = Vector2.zero;
         handle.anchoredPosition = Vector2.zero;
 
         if (hideCoroutine != null)
@@ -99,33 +103,12 @@ public class DynamicJoystick : MonoBehaviour,
         hideCoroutine = StartCoroutine(HideJoystick());
     }
 
-    private void UpdateJoystick(PointerEventData eventData)
-    {
-        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            background,
-            eventData.position,
-            eventData.pressEventCamera,
-            out Vector2 localPoint))
-            return;
-
-        input = Vector2.ClampMagnitude(
-            localPoint / handleRange,
-            1f
-        );
-
-        handle.anchoredPosition = input * handleRange;
-    }
-
     private IEnumerator HideJoystick()
     {
         yield return new WaitForSeconds(hideDelay);
 
         if (activeFingerId == int.MinValue)
-        {
             background.gameObject.SetActive(false);
-            handle.anchoredPosition = Vector2.zero;
-            input = Vector2.zero;
-        }
 
         hideCoroutine = null;
     }
@@ -133,7 +116,6 @@ public class DynamicJoystick : MonoBehaviour,
     private void OnDisable()
     {
         activeFingerId = int.MinValue;
-        input = Vector2.zero;
 
         if (hideCoroutine != null)
         {
@@ -143,5 +125,8 @@ public class DynamicJoystick : MonoBehaviour,
 
         if (background != null)
             background.gameObject.SetActive(false);
+
+        if (handle != null)
+            handle.anchoredPosition = Vector2.zero;
     }
 }

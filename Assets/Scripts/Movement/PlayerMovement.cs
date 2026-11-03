@@ -25,11 +25,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private PCInput pcInput;
     [SerializeField] private MobileInput mobileInput;
-    [SerializeField] private DynamicJoystick dynamicJoystick;
 
     private CharacterController controller;
     private PlayerPhysics playerPhysics;
-
     private float cameraPitch;
 
     private void Awake()
@@ -77,13 +75,10 @@ public class PlayerMovement : MonoBehaviour
             transform.forward * input.y;
 
         Vector3 targetVelocity = direction * moveSpeed;
-
         float deltaTime = Time.deltaTime;
 
         bool grounded = playerPhysics.IsGrounded;
-
-        Vector3 horizontalVelocity =
-            playerPhysics.HorizontalVelocity;
+        Vector3 horizontalVelocity = playerPhysics.HorizontalVelocity;
 
         if (input.sqrMagnitude > 0.0001f)
         {
@@ -111,7 +106,6 @@ public class PlayerMovement : MonoBehaviour
         }
 
         playerPhysics.SetHorizontalVelocity(horizontalVelocity);
-
         playerPhysics.ApplyGravity(deltaTime);
 
         controller.Move(playerPhysics.Velocity * deltaTime);
@@ -127,17 +121,10 @@ public class PlayerMovement : MonoBehaviour
                 ? SensitivitySettings.Instance.LookSensitivity
                 : 1f;
 
-        transform.Rotate(
-            Vector3.up * lookInput.x * sensitivity
-        );
+        transform.Rotate(Vector3.up * lookInput.x * sensitivity);
 
         cameraPitch -= lookInput.y * sensitivity;
-
-        cameraPitch = Mathf.Clamp(
-            cameraPitch,
-            -85f,
-            85f
-        );
+        cameraPitch = Mathf.Clamp(cameraPitch, -85f, 85f);
 
         cameraTransform.localRotation =
             Quaternion.Euler(cameraPitch, 0f, 0f);
