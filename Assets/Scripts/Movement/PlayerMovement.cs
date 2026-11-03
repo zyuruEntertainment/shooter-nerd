@@ -29,6 +29,7 @@ public class PlayerMovement : MonoBehaviour
 
     private CharacterController controller;
     private PlayerPhysics playerPhysics;
+
     private float cameraPitch;
 
     private void Awake()
@@ -48,15 +49,12 @@ public class PlayerMovement : MonoBehaviour
         Vector2 moveInput = Vector2.zero;
         Vector2 lookInput = Vector2.zero;
 
-        // Input joystick mobile.
-        if (dynamicJoystick != null)
-            moveInput = dynamicJoystick.Direction;
-
-        // Input kamera mobile.
         if (mobileInput != null)
+        {
+            moveInput = mobileInput.MoveInput;
             lookInput = mobileInput.ConsumeLookInput();
+        }
 
-        // Input PC sebagai alternatif.
         if (pcInput != null)
         {
             if (moveInput.sqrMagnitude < 0.0001f)
@@ -79,7 +77,9 @@ public class PlayerMovement : MonoBehaviour
             transform.forward * input.y;
 
         Vector3 targetVelocity = direction * moveSpeed;
+
         float deltaTime = Time.deltaTime;
+
         bool grounded = playerPhysics.IsGrounded;
 
         Vector3 horizontalVelocity =
@@ -87,8 +87,9 @@ public class PlayerMovement : MonoBehaviour
 
         if (input.sqrMagnitude > 0.0001f)
         {
-            float acceleration =
-                grounded ? groundAcceleration : airAcceleration;
+            float acceleration = grounded
+                ? groundAcceleration
+                : airAcceleration;
 
             horizontalVelocity = Vector3.MoveTowards(
                 horizontalVelocity,
@@ -98,8 +99,9 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            float deceleration =
-                grounded ? groundDeceleration : airDeceleration;
+            float deceleration = grounded
+                ? groundDeceleration
+                : airDeceleration;
 
             horizontalVelocity = Vector3.MoveTowards(
                 horizontalVelocity,
@@ -109,9 +111,9 @@ public class PlayerMovement : MonoBehaviour
         }
 
         playerPhysics.SetHorizontalVelocity(horizontalVelocity);
+
         playerPhysics.ApplyGravity(deltaTime);
 
-        // Satu-satunya tempat yang menggerakkan CharacterController.
         controller.Move(playerPhysics.Velocity * deltaTime);
     }
 
@@ -130,7 +132,12 @@ public class PlayerMovement : MonoBehaviour
         );
 
         cameraPitch -= lookInput.y * sensitivity;
-        cameraPitch = Mathf.Clamp(cameraPitch, -85f, 85f);
+
+        cameraPitch = Mathf.Clamp(
+            cameraPitch,
+            -85f,
+            85f
+        );
 
         cameraTransform.localRotation =
             Quaternion.Euler(cameraPitch, 0f, 0f);

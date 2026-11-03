@@ -387,6 +387,7 @@ MonoBehaviour:
   cameraTransform: {fileID: 330585546}
   pcInput: {fileID: 311055914}
   mobileInput: {fileID: 1421940841}
+  dynamicJoystick: {fileID: 1421940846}
 --- !u!114 &311055918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -950,9 +951,9 @@ RectTransform:
   m_Father: {fileID: 1421940845}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1200, y: 1080}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 600, y: -270}
+  m_SizeDelta: {x: 1200, y: 540}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &884306454
 MonoBehaviour:
@@ -1043,7 +1044,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -1119,7 +1120,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -1176,8 +1177,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebb6297c929a0a34a88943af0948c609, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MobileInput
-  joystickBackground: {fileID: 1322517956}
-  joystickHandle: {fileID: 898089795}
   lookArea: {fileID: 2101262562}
   lookMultiplier: 1
 --- !u!114 &1421940842
