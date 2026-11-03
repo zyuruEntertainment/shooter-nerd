@@ -387,7 +387,6 @@ MonoBehaviour:
   cameraTransform: {fileID: 330585546}
   pcInput: {fileID: 311055914}
   mobileInput: {fileID: 1421940841}
-  dynamicJoystick: {fileID: 1421940846}
 --- !u!114 &311055918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1096,13 +1095,13 @@ RectTransform:
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 898089795}
   m_Father: {fileID: 1421940845}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 300, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1177,6 +1176,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebb6297c929a0a34a88943af0948c609, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MobileInput
+  touchArea: {fileID: 884306453}
+  joystickBackground: {fileID: 1322517956}
+  joystickHandle: {fileID: 898089795}
+  handleRange: 1
+  hideDelay: 1
   lookArea: {fileID: 2101262562}
   lookMultiplier: 1
 --- !u!114 &1421940842
@@ -1282,7 +1286,7 @@ MonoBehaviour:
   touchArea: {fileID: 884306453}
   background: {fileID: 1322517956}
   handle: {fileID: 898089795}
-  handleRange: 60
+  handleRange: 120
   hideDelay: 1
 --- !u!1 &1485047564
 GameObject:
