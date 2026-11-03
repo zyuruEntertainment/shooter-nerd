@@ -41,8 +41,12 @@ public class DynamicJoystick : MonoBehaviour, IPointerDownHandler,
     {
         // Abaikan input jika sentuhan berada di luar area.
         if (!RectTransformUtility.RectangleContainsScreenPoint(
-            touchArea, eventData.position, uiCamera))
+            touchArea,
+            eventData.position,
+            eventData.pressEventCamera))
+        {
             return;
+        }
 
         // Abaikan sentuhan ulang dari jari yang sama.
         if (eventData.pointerId == activeFingerId)

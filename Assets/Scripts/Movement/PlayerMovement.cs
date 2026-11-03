@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
@@ -26,6 +25,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private PCInput pcInput;
     [SerializeField] private MobileInput mobileInput;
+    [SerializeField] private DynamicJoystick dynamicJoystick;
 
     private CharacterController controller;
     private PlayerPhysics playerPhysics;
@@ -48,12 +48,15 @@ public class PlayerMovement : MonoBehaviour
         Vector2 moveInput = Vector2.zero;
         Vector2 lookInput = Vector2.zero;
 
-        if (mobileInput != null)
-        {
-            moveInput = mobileInput.MoveInput;
-            lookInput = mobileInput.ConsumeLookInput();
-        }
+        // Input joystick mobile.
+        if (dynamicJoystick != null)
+            moveInput = dynamicJoystick.Direction;
 
+        // Input kamera mobile.
+        if (mobileInput != null)
+            lookInput = mobileInput.ConsumeLookInput();
+
+        // Input PC sebagai alternatif.
         if (pcInput != null)
         {
             if (moveInput.sqrMagnitude < 0.0001f)
