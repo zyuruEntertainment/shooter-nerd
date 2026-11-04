@@ -13,13 +13,19 @@ public class PlayerSpriteController : MonoBehaviour
     [Header("Player Sprites")]
     [SerializeField] private Sprite idleSprite;
     [SerializeField] private Sprite runSprite;
+    [SerializeField] private Sprite runSprite2;
     [SerializeField] private Sprite jumpSprite;
     [SerializeField] private Sprite crouchSprite;
     [SerializeField] private Sprite shootSprite;
     [SerializeField] private Sprite crouchShootSprite;
 
+    [Header("Run Animation")]
+    [SerializeField, Min(0.01f)] private float runFrameDuration = 0.12f;
+
     private bool isShooting;
     private Sprite currentSprite;
+    private float runFrameTimer;
+    private bool showSecondRunFrame;
 
     private void Awake()
     {
@@ -55,20 +61,63 @@ public class PlayerSpriteController : MonoBehaviour
 
         Sprite nextSprite;
 
-        // Urutan prioritas agar sprite lompat tidak tertimpa sprite lari.
         if (jumping)
+        {
+            ResetRunAnimation();
             nextSprite = jumpSprite;
+        }
         else if (crouching && isShooting)
+        {
+            ResetRunAnimation();
             nextSprite = crouchShootSprite;
+        }
         else if (crouching)
+        {
+            ResetRunAnimation();
             nextSprite = crouchSprite;
+        }
         else if (isShooting)
+        {
+            ResetRunAnimation();
             nextSprite = shootSprite;
+        }
         else if (moving)
-            nextSprite = runSprite;
+        {
+            nextSprite = GetRunAnimationSprite();
+        }
         else
+        {
+            ResetRunAnimation();
             nextSprite = idleSprite;
+        }
 
+        SetSprite(nextSprite);
+    }
+
+    private Sprite GetRunAnimationSprite()
+    {
+        if (runSprite2 == null)
+            return runSprite;
+
+        runFrameTimer += Time.deltaTime;
+
+        if (runFrameTimer >= runFrameDuration)
+        {
+            runFrameTimer = 0f;
+            showSecondRunFrame = !showSecondRunFrame;
+        }
+
+        return showSecondRunFrame ? runSprite2 : runSprite;
+    }
+
+    private void ResetRunAnimation()
+    {
+        runFrameTimer = 0f;
+        showSecondRunFrame = false;
+    }
+
+    private void SetSprite(Sprite nextSprite)
+    {
         if (nextSprite != null && nextSprite != currentSprite)
         {
             spriteRenderer.sprite = nextSprite;
@@ -84,7 +133,6 @@ public class PlayerSpriteController : MonoBehaviour
         return pcInput != null ? pcInput.MoveInput : Vector2.zero;
     }
 
-    // Hubungkan ke tombol tembak UI atau sistem senjata.
     public void SetShooting(bool value)
     {
         isShooting = value;

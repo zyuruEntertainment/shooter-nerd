@@ -61,7 +61,6 @@ public class PlayerCrouch : MonoBehaviour
             SetCrouching(!IsCrouching);
     }
 
-    // Untuk UI mobile: panggil true saat tombol ditekan, false saat dilepas.
     public void SetCrouching(bool crouching)
     {
         if (!initialized || IsCrouching == crouching)
@@ -76,14 +75,12 @@ public class PlayerCrouch : MonoBehaviour
                 capsuleCollider.radius * 2f
             );
 
-            // Turunkan center setengah pengurangan agar bagian bawah tetap di tempat.
             capsuleCollider.center =
                 originalCapsuleCenter + Vector3.down * (heightReduction * 0.5f);
 
-            // Sesuai permintaan: center Z SphereCollider dikurangi 1.
-            sphereCollider.center = originalSphereCenter + new Vector3(0f, 0f, -1f);
+            sphereCollider.center =
+                originalSphereCenter + new Vector3(0f, -1f, 0f);
 
-            // CharacterController juga dipendekkan supaya collider gerak ikut crouch.
             if (characterController != null)
             {
                 characterController.height = Mathf.Max(
