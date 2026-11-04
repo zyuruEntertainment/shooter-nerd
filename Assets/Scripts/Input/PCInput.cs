@@ -8,6 +8,7 @@ public class PCInput : MonoBehaviour
 
     private Vector2 lookInput;
     private bool jumpRequested;
+    private bool dashRequested;
 
     private void Update()
     {
@@ -36,6 +37,9 @@ public class PCInput : MonoBehaviour
 
         if (keyboard.spaceKey.wasPressedThisFrame)
             jumpRequested = true;
+
+        if (keyboard.digit1Key.wasPressedThisFrame)
+            dashRequested = true;
 
         MoveInput = Vector2.ClampMagnitude(input, 1f);
 
@@ -71,6 +75,15 @@ public class PCInput : MonoBehaviour
             return false;
 
         jumpRequested = false;
+        return true;
+    }
+
+    public bool ConsumeDashInput()
+    {
+        if (!dashRequested)
+            return false;
+
+        dashRequested = false;
         return true;
     }
 }

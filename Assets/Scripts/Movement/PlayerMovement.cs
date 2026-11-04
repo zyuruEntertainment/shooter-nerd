@@ -2,6 +2,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(PlayerPhysics))]
+[RequireComponent(typeof(PlayerDash))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
@@ -28,12 +29,15 @@ public class PlayerMovement : MonoBehaviour
 
     private CharacterController controller;
     private PlayerPhysics playerPhysics;
+    private PlayerDash playerDash;
+
     private float cameraPitch;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
         playerPhysics = GetComponent<PlayerPhysics>();
+        playerDash = GetComponent<PlayerDash>();
 
         if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
@@ -60,6 +64,9 @@ public class PlayerMovement : MonoBehaviour
 
             if (lookInput.sqrMagnitude < 0.0001f)
                 lookInput = pcInput.ConsumeLookInput();
+
+            if (pcInput.ConsumeDashInput())
+                StartDash(moveInput);
         }
 
         RotatePlayer(lookInput);
@@ -68,65 +75,110 @@ public class PlayerMovement : MonoBehaviour
 
     private void MovePlayer(Vector2 input)
     {
-        input = Vector2.ClampMagnitude(input, 1f);
-
-        Vector3 direction =
-            transform.right * input.x +
-            transform.forward * input.y;
-
-        Vector3 targetVelocity = direction * moveSpeed;
         float deltaTime = Time.deltaTime;
-
         bool grounded = playerPhysics.IsGrounded;
-        Vector3 horizontalVelocity = playerPhysics.HorizontalVelocity;
 
-        if (input.sqrMagnitude > 0.0001f)
+        Vector3 horizontalVelocity;
+
+        if (playerDash.IsDashing)
         {
-            float acceleration = grounded
-                ? groundAcceleration
-                : airAcceleration;
-
-            horizontalVelocity = Vector3.MoveTowards(
-                horizontalVelocity,
-                targetVelocity,
-                acceleration * deltaTime
-            );
+            horizontalVelocity = playerDash.DashVelocity;
         }
         else
         {
-            float deceleration = grounded
-                ? groundDeceleration
-                : airDeceleration;
+            input = Vector2.ClampMagnitude(input, 1f);
 
-            horizontalVelocity = Vector3.MoveTowards(
-                horizontalVelocity,
-                Vector3.zero,
-                deceleration * deltaTime
-            );
+            Vector3 direction =
+                transform.right * input.x +
+                transform.forward * input.y;
+
+            Vector3 targetVelocity = direction * moveSpeed;
+
+            horizontalVelocity = playerPhysics.HorizontalVelocity;
+
+            if (input.sqrMagnitude > 0.0001f)
+            {
+                float acceleration = grounded
+                    ? groundAcceleration
+                    : airAcceleration;
+
+                horizontalVelocity = Vector3.MoveTowards(
+                    horizontalVelocity,
+                    targetVelocity,
+                    acceleration * deltaTime
+                );
+            }
+            else
+            {
+                float deceleration = grounded
+                    ? groundDeceleration
+                    : airDeceleration;
+
+                horizontalVelocity = Vector3.MoveTowards(
+                    horizontalVelocity,
+                    Vector3.zero,
+                    deceleration * deltaTime
+                );
+            }
         }
 
         playerPhysics.SetHorizontalVelocity(horizontalVelocity);
+
+        // Gravitasi tetap berjalan selama dash.
         playerPhysics.ApplyGravity(deltaTime);
 
-        controller.Move(playerPhysics.Velocity * deltaTime);
+        Vector3 movement = playerPhysics.Velocity * deltaTime;
+
+        CollisionFlags flags = controller.Move(movement);
+
+        // Batalkan dash jika menabrak dinding.
+        if (playerDash.IsDashing &&
+            (flags & CollisionFlags.Sides) != 0)
+        {
+            playerDash.CancelDash();
+            playerPhysics.SetHorizontalVelocity(Vector3.zero);
+        }
+        else if (playerDash.IsDashing)
+        {
+            // Kurangi jarak dash berdasarkan kecepatan dan waktu.
+            playerDash.UpdateDash(deltaTime);
+        }
     }
 
     private void RotatePlayer(Vector2 lookInput)
     {
-        if (cameraTransform == null)
+        if (lookInput.sqrMagnitude < 0.0001f)
             return;
 
-        float sensitivity =
-            SensitivitySettings.Instance != null
-                ? SensitivitySettings.Instance.LookSensitivity
-                : 1f;
+        float sensitivity = 1f;
 
-        transform.Rotate(Vector3.up * lookInput.x * sensitivity);
+        if (SensitivitySettings.Instance != null)
+            sensitivity = SensitivitySettings.Instance.LookSensitivity;
 
-        cameraPitch -= lookInput.y * sensitivity;
+        float mouseX = lookInput.x * sensitivity;
+        float mouseY = lookInput.y * sensitivity;
+
+        transform.Rotate(Vector3.up * mouseX);
+
+        cameraPitch -= mouseY;
         cameraPitch = Mathf.Clamp(cameraPitch, -85f, 85f);
 
-        cameraTransform.localRotation =
-            Quaternion.Euler(cameraPitch, 0f, 0f);
+        if (cameraTransform != null)
+        {
+            cameraTransform.localRotation =
+                Quaternion.Euler(cameraPitch, 0f, 0f);
+        }
+    }
+
+    private void StartDash(Vector2 input)
+    {
+        Vector3 direction =
+            transform.right * input.x +
+            transform.forward * input.y;
+
+        if (direction.sqrMagnitude < 0.0001f)
+            direction = transform.forward;
+
+        playerDash.Dash(direction);
     }
 }

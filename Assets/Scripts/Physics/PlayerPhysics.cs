@@ -1,5 +1,4 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerPhysics : MonoBehaviour
@@ -7,11 +6,20 @@ public class PlayerPhysics : MonoBehaviour
     [Header("Gravity")]
     [SerializeField] private float gravity = -20f;
 
+    [SerializeField, Min(0f)]
+    private float maxFallSpeed = 45f;
+
+    [SerializeField, Min(0f)]
+    private float groundStickForce = 2f;
+
     private CharacterController controller;
     private Vector3 velocity;
 
     public float Gravity => gravity;
+    public float MaxFallSpeed => maxFallSpeed;
+
     public Vector3 Velocity => velocity;
+
     public float VerticalVelocity => velocity.y;
 
     public Vector3 HorizontalVelocity =>
@@ -25,28 +33,51 @@ public class PlayerPhysics : MonoBehaviour
         controller = GetComponent<CharacterController>();
     }
 
-    // PlayerJump mengatur kecepatan vertikal.
+    public void SetVelocity(Vector3 newVelocity)
+    {
+        velocity = newVelocity;
+        ClampFallSpeed();
+    }
+
     public void SetVerticalVelocity(float verticalVelocity)
     {
         velocity.y = verticalVelocity;
+        ClampFallSpeed();
     }
 
-    // PlayerMovement mengatur momentum horizontal.
     public void SetHorizontalVelocity(Vector3 horizontalVelocity)
     {
         velocity.x = horizontalVelocity.x;
         velocity.z = horizontalVelocity.z;
     }
 
-    // Memperbarui gravitasi tanpa memindahkan karakter.
     public void ApplyGravity(float deltaTime)
     {
         if (controller == null)
             return;
 
         if (controller.isGrounded && velocity.y < 0f)
-            velocity.y = -2f;
+        {
+            velocity.y = -groundStickForce;
+            return;
+        }
 
         velocity.y += gravity * deltaTime;
+        ClampFallSpeed();
+    }
+
+    private void ClampFallSpeed()
+    {
+        velocity.y = Mathf.Max(velocity.y, -maxFallSpeed);
+    }
+
+    public void StopVerticalVelocity()
+    {
+        velocity.y = 0f;
+    }
+
+    public void StopAllVelocity()
+    {
+        velocity = Vector3.zero;
     }
 }
