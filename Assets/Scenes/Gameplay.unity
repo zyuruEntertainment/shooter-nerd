@@ -1790,7 +1790,7 @@ GameObject:
   - component: {fileID: 1811880657}
   - component: {fileID: 1811880658}
   m_Layer: 0
-  m_Name: 'IDLE [2A501D2]'
+  m_Name: model
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
