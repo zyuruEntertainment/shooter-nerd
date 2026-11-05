@@ -29,23 +29,16 @@ public class ArcadeWeaponController : MonoBehaviour
 
     private int currentAmmo;
     private int reserveAmmo;
-
     private float nextFireTime;
     private bool mobileFireHeld;
-
     private Coroutine shootingRoutine;
 
-    private Color normalCrosshairColor = Color.black;
-    private Color targetCrosshairColor = Color.red;
+    private readonly Color normalCrosshairColor = Color.black;
+    private readonly Color targetCrosshairColor = Color.red;
 
     private void Awake()
     {
-        currentAmmo = Mathf.Clamp(
-            startingMagazineAmmo,
-            0,
-            magazineSize
-        );
-
+        currentAmmo = Mathf.Clamp(startingMagazineAmmo, 0, magazineSize);
         reserveAmmo = startingReserveAmmo;
 
         if (aimCamera == null)
@@ -79,10 +72,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Fire()
     {
-        if (Time.time < nextFireTime)
-            return;
-
-        if (currentAmmo <= 0)
+        if (Time.time < nextFireTime || currentAmmo <= 0)
             return;
 
         currentAmmo--;
@@ -91,13 +81,23 @@ public class ArcadeWeaponController : MonoBehaviour
         UpdateAmmoUI();
         PlayShootingAnimation();
 
-        if (TryGetTarget(out RaycastHit hit))
-        {
-            HitZone zone = hit.collider.GetComponent<HitZone>();
+        if (!TryGetTarget(out RaycastHit hit))
+            return;
 
-            if (zone != null)
-                zone.ApplyDamage(damage);
+        // Prefer a dedicated body/head HitZone when present.
+        HitZone zone = hit.collider.GetComponentInParent<HitZone>();
+        if (zone != null)
+        {
+            zone.ApplyDamage(damage);
+            return;
         }
+
+        // Fallback supports existing bot colliders with CombatHealth on the root.
+        CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
+        CombatHealth ownHealth = GetComponent<CombatHealth>();
+
+        if (health != null && health != ownHealth)
+            health.TakeDamage(damage);
     }
 
     private bool TryGetTarget(out RaycastHit hit)
@@ -129,8 +129,12 @@ public class ArcadeWeaponController : MonoBehaviour
 
         if (TryGetTarget(out RaycastHit hit))
         {
-            HitZone zone = hit.collider.GetComponent<HitZone>();
-            targetingEnemy = zone != null;
+            HitZone zone = hit.collider.GetComponentInParent<HitZone>();
+            CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
+
+            targetingEnemy =
+                zone != null ||
+                (health != null && health != GetComponent<CombatHealth>());
         }
 
         crosshair.color = targetingEnemy
@@ -140,10 +144,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Reload()
     {
-        if (currentAmmo >= magazineSize)
-            return;
-
-        if (reserveAmmo <= 0)
+        if (currentAmmo >= magazineSize || reserveAmmo <= 0)
             return;
 
         int needed = magazineSize - currentAmmo;
@@ -158,9 +159,7 @@ public class ArcadeWeaponController : MonoBehaviour
     private void UpdateAmmoUI()
     {
         if (ammoText != null)
-        {
             ammoText.text = $"{currentAmmo}/{reserveAmmo}";
-        }
     }
 
     private void PlayShootingAnimation()
@@ -177,11 +176,7 @@ public class ArcadeWeaponController : MonoBehaviour
     private IEnumerator ShootingAnimation()
     {
         spriteController.SetShooting(true);
-
-        yield return new WaitForSeconds(
-            shootingAnimationDuration
-        );
-
+        yield return new WaitForSeconds(shootingAnimationDuration);
         spriteController.SetShooting(false);
         shootingRoutine = null;
     }
