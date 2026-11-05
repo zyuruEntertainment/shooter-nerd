@@ -356,6 +356,7 @@ GameObject:
   - component: {fileID: 151998542}
   - component: {fileID: 151998541}
   - component: {fileID: 151998540}
+  - component: {fileID: 151998548}
   - component: {fileID: 151998539}
   - component: {fileID: 151998538}
   - component: {fileID: 151998537}
@@ -369,7 +370,9 @@ GameObject:
   - component: {fileID: 151998529}
   - component: {fileID: 151998528}
   - component: {fileID: 151998545}
-  m_Layer: 0
+  - component: {fileID: 151998547}
+  - component: {fileID: 151998546}
+  m_Layer: 3
   m_Name: Bot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -724,7 +727,58 @@ MonoBehaviour:
   shootSprite: {fileID: 21300000, guid: e911d54bb02aadb4db61cbb4bb7da30f, type: 3}
   crouchShootSprite: {fileID: 21300000, guid: f39587d5f45fd614ebf251a9a3bf6bba, type: 3}
   movementThreshold: 0.1
-  runFrameDuration: 0.12
+  runFrameDuration: 0.5
+--- !u!114 &151998546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 151998527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 355b2bd37cdcf354ebe1a87ea46e44c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BotRangedCombat
+  vision: {fileID: 151998535}
+  playerTarget: {fileID: 579181610}
+  attackRange: 20
+  damage: 8
+  attackInterval: 1.1
+--- !u!114 &151998547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 151998527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f79d983fa4f47b47be502590e371c0e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
+  maxHealth: 100
+--- !u!135 &151998548
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 151998527}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.31
+  m_Center: {x: 0, y: 1.5, z: 0}
 --- !u!1 &170795225
 GameObject:
   m_ObjectHideFlags: 0
@@ -1330,6 +1384,8 @@ GameObject:
   - component: {fileID: 579181612}
   - component: {fileID: 579181614}
   - component: {fileID: 579181615}
+  - component: {fileID: 579181617}
+  - component: {fileID: 579181616}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1616,6 +1672,46 @@ MonoBehaviour:
   stepInterval: 0.45
   stepRadius: 12
   moveThreshold: 0.5
+--- !u!114 &579181616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 579181601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e81c275b1fb45fb4dbf9f48f8cb1f6ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArcadeWeaponController
+  weaponName: AK-47
+  magazineSize: 6
+  startingReserveAmmo: 114
+  startingMagazineAmmo: 6
+  fireInterval: 0.15
+  damage: 20
+  range: 100
+  shootingAnimationDuration: 0.2
+  aimCamera: {fileID: 330585545}
+  crosshair: {fileID: 2014814561}
+  ammoText: {fileID: 948719577}
+  spriteController: {fileID: 579181613}
+  hitboxMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &579181617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 579181601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f79d983fa4f47b47be502590e371c0e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
+  maxHealth: 100
 --- !u!1 &605274206
 GameObject:
   m_ObjectHideFlags: 0
@@ -2734,7 +2830,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1835800735}
   - component: {fileID: 1835800736}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: model
   m_TagString: Untagged
   m_Icon: {fileID: 0}
