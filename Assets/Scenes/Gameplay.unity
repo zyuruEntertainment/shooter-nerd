@@ -1698,7 +1698,9 @@ MonoBehaviour:
   spriteController: {fileID: 579181613}
   hitboxMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 8
+  aimViewportRadiusX: 0.28
+  aimViewportRadiusY: 0.28
 --- !u!114 &579181617
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2373,6 +2375,7 @@ GameObject:
   - component: {fileID: 1421940841}
   - component: {fileID: 1421940846}
   - component: {fileID: 1421940847}
+  - component: {fileID: 1421940848}
   m_Layer: 5
   m_Name: UI-Mobile
   m_TagString: Untagged
@@ -2392,11 +2395,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebb6297c929a0a34a88943af0948c609, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MobileInput
-  touchArea: {fileID: 884306453}
   joystickBackground: {fileID: 1322517956}
   joystickHandle: {fileID: 898089795}
   handleRange: 1
-  hideDelay: 1
   lookArea: {fileID: 2101262562}
   lookMultiplier: 1
 --- !u!114 &1421940842
@@ -2521,6 +2522,24 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &1421940848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421940840}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e18086da7efe1dd488eb0edba13945ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FireJoystick
+  touchArea: {fileID: 1250259165}
+  background: {fileID: 1250259165}
+  handle: {fileID: 1055214671}
+  weapon: {fileID: 579181616}
+  handleRange: 78
+  keepBackgroundVisible: 1
 --- !u!1 &1485047564
 GameObject:
   m_ObjectHideFlags: 0

@@ -27,10 +27,18 @@ public class ArcadeWeaponController : MonoBehaviour
     [Header("Target Detection")]
     [SerializeField] private LayerMask hitboxMask = ~0;
 
+    [Header("Mobile Fire Joystick Aim")]
+    [SerializeField, Range(0.05f, 0.45f)] private float aimViewportRadiusX = 0.28f;
+    [SerializeField, Range(0.05f, 0.45f)] private float aimViewportRadiusY = 0.28f;
+
     private int currentAmmo;
     private int reserveAmmo;
     private float nextFireTime;
     private bool mobileFireHeld;
+    private bool mobileAimActive;
+    private Vector2 mobileAimInput;
+    private Vector2 defaultCrosshairAnchoredPosition;
+    private bool cachedCrosshairPosition;
     private Coroutine shootingRoutine;
 
     private readonly Color normalCrosshairColor = Color.black;
@@ -46,6 +54,12 @@ public class ArcadeWeaponController : MonoBehaviour
 
         if (spriteController == null)
             spriteController = GetComponent<PlayerSpriteController>();
+
+        if (crosshair != null)
+        {
+            defaultCrosshairAnchoredPosition = crosshair.rectTransform.anchoredPosition;
+            cachedCrosshairPosition = true;
+        }
 
         if (aimCamera == null)
             Debug.LogError("Weapon: Camera belum dipasang.", this);
@@ -70,6 +84,44 @@ public class ArcadeWeaponController : MonoBehaviour
         mobileFireHeld = value;
     }
 
+    public void SetMobileAim(Vector2 direction, bool active)
+    {
+        mobileAimInput = Vector2.ClampMagnitude(direction, 1f);
+        mobileAimActive = active;
+    }
+
+    private Vector2 GetAimViewportPoint()
+    {
+        if (!mobileAimActive)
+            return new Vector2(0.5f, 0.5f);
+
+        return new Vector2(
+            Mathf.Clamp01(0.5f + mobileAimInput.x * aimViewportRadiusX),
+            Mathf.Clamp01(0.5f + mobileAimInput.y * aimViewportRadiusY)
+        );
+    }
+
+    private bool TryGetTarget(out RaycastHit hit)
+    {
+        hit = default;
+
+        if (aimCamera == null)
+            return false;
+
+        Vector2 viewportPoint = GetAimViewportPoint();
+        Ray ray = aimCamera.ViewportPointToRay(
+            new Vector3(viewportPoint.x, viewportPoint.y, 0f)
+        );
+
+        return Physics.Raycast(
+            ray,
+            out hit,
+            range,
+            hitboxMask,
+            QueryTriggerInteraction.Collide
+        );
+    }
+
     public void Fire()
     {
         if (Time.time < nextFireTime || currentAmmo <= 0)
@@ -84,7 +136,6 @@ public class ArcadeWeaponController : MonoBehaviour
         if (!TryGetTarget(out RaycastHit hit))
             return;
 
-        // Prefer a dedicated body/head HitZone when present.
         HitZone zone = hit.collider.GetComponentInParent<HitZone>();
         if (zone != null)
         {
@@ -92,32 +143,11 @@ public class ArcadeWeaponController : MonoBehaviour
             return;
         }
 
-        // Fallback supports existing bot colliders with CombatHealth on the root.
         CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
         CombatHealth ownHealth = GetComponent<CombatHealth>();
 
         if (health != null && health != ownHealth)
             health.TakeDamage(damage);
-    }
-
-    private bool TryGetTarget(out RaycastHit hit)
-    {
-        hit = default;
-
-        if (aimCamera == null)
-            return false;
-
-        Ray ray = aimCamera.ViewportPointToRay(
-            new Vector3(0.5f, 0.5f, 0f)
-        );
-
-        return Physics.Raycast(
-            ray,
-            out hit,
-            range,
-            hitboxMask,
-            QueryTriggerInteraction.Collide
-        );
     }
 
     private void UpdateCrosshair()
@@ -140,6 +170,48 @@ public class ArcadeWeaponController : MonoBehaviour
         crosshair.color = targetingEnemy
             ? targetCrosshairColor
             : normalCrosshairColor;
+
+        UpdateCrosshairPosition();
+    }
+
+    private void UpdateCrosshairPosition()
+    {
+        if (crosshair == null)
+            return;
+
+        RectTransform crosshairRect = crosshair.rectTransform;
+
+        if (!mobileAimActive)
+        {
+            if (cachedCrosshairPosition)
+                crosshairRect.anchoredPosition = defaultCrosshairAnchoredPosition;
+            return;
+        }
+
+        RectTransform parentRect = crosshairRect.parent as RectTransform;
+        if (parentRect == null)
+            return;
+
+        Vector2 viewportPoint = GetAimViewportPoint();
+        Vector2 screenPoint = new Vector2(
+            viewportPoint.x * Screen.width,
+            viewportPoint.y * Screen.height
+        );
+
+        Canvas canvas = crosshair.GetComponentInParent<Canvas>();
+        Camera uiCamera = canvas != null &&
+                          canvas.renderMode != RenderMode.ScreenSpaceOverlay
+            ? canvas.worldCamera
+            : null;
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            parentRect,
+            screenPoint,
+            uiCamera,
+            out Vector2 localPoint))
+        {
+            crosshairRect.anchoredPosition = localPoint;
+        }
     }
 
     public void Reload()
@@ -184,6 +256,8 @@ public class ArcadeWeaponController : MonoBehaviour
     private void OnDisable()
     {
         mobileFireHeld = false;
+        mobileAimActive = false;
+        mobileAimInput = Vector2.zero;
 
         if (shootingRoutine != null)
         {
