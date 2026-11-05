@@ -27,18 +27,10 @@ public class ArcadeWeaponController : MonoBehaviour
     [Header("Target Detection")]
     [SerializeField] private LayerMask hitboxMask = ~0;
 
-    [Header("Mobile Fire Joystick Aim")]
-    [SerializeField, Range(0.05f, 0.45f)] private float aimViewportRadiusX = 0.28f;
-    [SerializeField, Range(0.05f, 0.45f)] private float aimViewportRadiusY = 0.28f;
-
     private int currentAmmo;
     private int reserveAmmo;
     private float nextFireTime;
     private bool mobileFireHeld;
-    private bool mobileAimActive;
-    private Vector2 mobileAimInput;
-    private Vector2 defaultCrosshairAnchoredPosition;
-    private bool cachedCrosshairPosition;
     private Coroutine shootingRoutine;
 
     private readonly Color normalCrosshairColor = Color.black;
@@ -55,11 +47,7 @@ public class ArcadeWeaponController : MonoBehaviour
         if (spriteController == null)
             spriteController = GetComponent<PlayerSpriteController>();
 
-        if (crosshair != null)
-        {
-            defaultCrosshairAnchoredPosition = crosshair.rectTransform.anchoredPosition;
-            cachedCrosshairPosition = true;
-        }
+        KeepCrosshairCentered();
 
         if (aimCamera == null)
             Debug.LogError("Weapon: Camera belum dipasang.", this);
@@ -69,6 +57,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
     private void Update()
     {
+        KeepCrosshairCentered();
         UpdateCrosshair();
 
         bool mouseHeld =
@@ -77,28 +66,26 @@ public class ArcadeWeaponController : MonoBehaviour
 
         if (mouseHeld || mobileFireHeld)
             Fire();
+
+        if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+        {
+            Reload();
+        }
     }
 
+    // Fire joystick hanya mengontrol status menembak.
+    // Arah bidik selalu mengikuti pusat kamera / crosshair.
     public void SetFireHeld(bool value)
     {
         mobileFireHeld = value;
     }
 
-    public void SetMobileAim(Vector2 direction, bool active)
+    private Ray GetCenterAimRay()
     {
-        mobileAimInput = Vector2.ClampMagnitude(direction, 1f);
-        mobileAimActive = active;
-    }
+        if (aimCamera == null)
+            return default;
 
-    private Vector2 GetAimViewportPoint()
-    {
-        if (!mobileAimActive)
-            return new Vector2(0.5f, 0.5f);
-
-        return new Vector2(
-            Mathf.Clamp01(0.5f + mobileAimInput.x * aimViewportRadiusX),
-            Mathf.Clamp01(0.5f + mobileAimInput.y * aimViewportRadiusY)
-        );
+        return aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
     }
 
     private bool TryGetTarget(out RaycastHit hit)
@@ -108,13 +95,8 @@ public class ArcadeWeaponController : MonoBehaviour
         if (aimCamera == null)
             return false;
 
-        Vector2 viewportPoint = GetAimViewportPoint();
-        Ray ray = aimCamera.ViewportPointToRay(
-            new Vector3(viewportPoint.x, viewportPoint.y, 0f)
-        );
-
         return Physics.Raycast(
-            ray,
+            GetCenterAimRay(),
             out hit,
             range,
             hitboxMask,
@@ -124,7 +106,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Fire()
     {
-        if (Time.time < nextFireTime || currentAmmo <= 0)
+        if (Time.time < nextFireTime || currentAmmo <= 0 || aimCamera == null)
             return;
 
         currentAmmo--;
@@ -133,6 +115,7 @@ public class ArcadeWeaponController : MonoBehaviour
         UpdateAmmoUI();
         PlayShootingAnimation();
 
+        // Damage memakai ray yang sama dengan pemeriksaan crosshair.
         if (!TryGetTarget(out RaycastHit hit))
             return;
 
@@ -170,48 +153,17 @@ public class ArcadeWeaponController : MonoBehaviour
         crosshair.color = targetingEnemy
             ? targetCrosshairColor
             : normalCrosshairColor;
-
-        UpdateCrosshairPosition();
     }
 
-    private void UpdateCrosshairPosition()
+    private void KeepCrosshairCentered()
     {
         if (crosshair == null)
             return;
 
-        RectTransform crosshairRect = crosshair.rectTransform;
-
-        if (!mobileAimActive)
-        {
-            if (cachedCrosshairPosition)
-                crosshairRect.anchoredPosition = defaultCrosshairAnchoredPosition;
-            return;
-        }
-
-        RectTransform parentRect = crosshairRect.parent as RectTransform;
-        if (parentRect == null)
-            return;
-
-        Vector2 viewportPoint = GetAimViewportPoint();
-        Vector2 screenPoint = new Vector2(
-            viewportPoint.x * Screen.width,
-            viewportPoint.y * Screen.height
-        );
-
-        Canvas canvas = crosshair.GetComponentInParent<Canvas>();
-        Camera uiCamera = canvas != null &&
-                          canvas.renderMode != RenderMode.ScreenSpaceOverlay
-            ? canvas.worldCamera
-            : null;
-
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            parentRect,
-            screenPoint,
-            uiCamera,
-            out Vector2 localPoint))
-        {
-            crosshairRect.anchoredPosition = localPoint;
-        }
+        RectTransform rect = crosshair.rectTransform;
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
     }
 
     public void Reload()
@@ -256,8 +208,6 @@ public class ArcadeWeaponController : MonoBehaviour
     private void OnDisable()
     {
         mobileFireHeld = false;
-        mobileAimActive = false;
-        mobileAimInput = Vector2.zero;
 
         if (shootingRoutine != null)
         {

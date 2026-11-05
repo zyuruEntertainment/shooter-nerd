@@ -46,9 +46,8 @@ public class FireJoystick : MonoBehaviour,
 
         activePointerId = eventData.pointerId;
         background.gameObject.SetActive(true);
-
         UpdateHandle(eventData);
-        UpdateWeapon();
+
         if (weapon != null)
             weapon.SetFireHeld(true);
     }
@@ -58,8 +57,8 @@ public class FireJoystick : MonoBehaviour,
         if (eventData.pointerId != activePointerId)
             return;
 
+        // Handle tetap memberi feedback sentuhan, tetapi tidak menggeser crosshair.
         UpdateHandle(eventData);
-        UpdateWeapon();
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -67,17 +66,7 @@ public class FireJoystick : MonoBehaviour,
         if (eventData.pointerId != activePointerId)
             return;
 
-        activePointerId = int.MinValue;
-        handle.anchoredPosition = Vector2.zero;
-
-        if (weapon != null)
-        {
-            weapon.SetFireHeld(false);
-            weapon.SetMobileAim(Vector2.zero, false);
-        }
-
-        if (!keepBackgroundVisible)
-            background.gameObject.SetActive(false);
+        ReleaseFire();
     }
 
     private void UpdateHandle(PointerEventData eventData)
@@ -93,19 +82,6 @@ public class FireJoystick : MonoBehaviour,
             Vector2.ClampMagnitude(localPoint, handleRange);
     }
 
-    private void UpdateWeapon()
-    {
-        if (weapon == null)
-            return;
-
-        Vector2 aim = Vector2.ClampMagnitude(
-            handle.anchoredPosition / Mathf.Max(handleRange, 1f),
-            1f
-        );
-
-        weapon.SetMobileAim(aim, true);
-    }
-
     private bool IsInside(RectTransform area, PointerEventData eventData)
     {
         return area != null &&
@@ -116,7 +92,7 @@ public class FireJoystick : MonoBehaviour,
             );
     }
 
-    private void OnDisable()
+    private void ReleaseFire()
     {
         activePointerId = int.MinValue;
 
@@ -124,12 +100,14 @@ public class FireJoystick : MonoBehaviour,
             handle.anchoredPosition = Vector2.zero;
 
         if (weapon != null)
-        {
             weapon.SetFireHeld(false);
-            weapon.SetMobileAim(Vector2.zero, false);
-        }
 
-        if (background != null && !keepBackgroundVisible)
+        if (!keepBackgroundVisible && background != null)
             background.gameObject.SetActive(false);
+    }
+
+    private void OnDisable()
+    {
+        ReleaseFire();
     }
 }
