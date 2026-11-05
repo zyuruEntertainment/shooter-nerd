@@ -7,10 +7,9 @@ public class PlayerSpriteController : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private PlayerPhysics playerPhysics;
     [SerializeField] private PlayerCrouch playerCrouch;
-    [SerializeField] private PCInput pcInput;
-    [SerializeField] private MobileInput mobileInput;
+    [SerializeField] private BotCombat botCombat;
 
-    [Header("Player Sprites")]
+    [Header("Sprites")]
     [SerializeField] private Sprite idleSprite;
     [SerializeField] private Sprite runSprite;
     [SerializeField] private Sprite runSprite2;
@@ -19,15 +18,34 @@ public class PlayerSpriteController : MonoBehaviour
     [SerializeField] private Sprite shootSprite;
     [SerializeField] private Sprite crouchShootSprite;
 
-    [Header("Run Animation")]
-    [SerializeField, Min(0.01f)] private float runFrameDuration = 0.12f;
+    [Header("Movement Detection")]
+    [SerializeField, Min(0f)]
+    private float movementThreshold = 0.1f;
 
-    private bool isShooting;
+    [Header("Run Animation")]
+    [SerializeField, Min(0.01f)]
+    private float runFrameDuration = 0.12f;
+
     private Sprite currentSprite;
+
     private float runFrameTimer;
     private bool showSecondRunFrame;
 
+    private bool isShooting;
+    private bool externalCrouch;
+
+    public bool IsShooting => isShooting;
+    public bool IsMoving { get; private set; }
+    public bool IsJumping { get; private set; }
+    public bool IsCrouching { get; private set; }
+
     private void Awake()
+    {
+        CacheReferences();
+        ValidateReferences();
+    }
+
+    private void CacheReferences()
     {
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -38,14 +56,31 @@ public class PlayerSpriteController : MonoBehaviour
         if (playerCrouch == null)
             playerCrouch = GetComponent<PlayerCrouch>();
 
-        if (pcInput == null)
-            pcInput = GetComponent<PCInput>();
+        if (botCombat == null)
+            botCombat = GetComponent<BotCombat>();
+    }
 
-        if (mobileInput == null)
-            mobileInput = FindAnyObjectByType<MobileInput>();
-
+    private void ValidateReferences()
+    {
         if (spriteRenderer == null)
-            Debug.LogError("PlayerSpriteController: SpriteRenderer tidak ditemukan.", this);
+        {
+            Debug.LogError(
+                "PlayerSpriteController: SpriteRenderer missing.",
+                this
+            );
+
+            enabled = false;
+            return;
+        }
+
+        if (playerPhysics == null)
+        {
+            Debug.LogWarning(
+                "PlayerSpriteController: PlayerPhysics missing. " +
+                "Movement animation detection will be unavailable.",
+                this
+            );
+        }
     }
 
     private void LateUpdate()
@@ -53,45 +88,79 @@ public class PlayerSpriteController : MonoBehaviour
         if (spriteRenderer == null)
             return;
 
-        bool grounded = playerPhysics == null || playerPhysics.IsGrounded;
-        bool crouching = playerCrouch != null && playerCrouch.IsCrouching;
-        bool moving = GetMoveInput().sqrMagnitude > 0.01f;
-        bool jumping = !grounded ||
-            (playerPhysics != null && playerPhysics.VerticalVelocity > 0.1f);
+        UpdateCharacterState();
 
-        Sprite nextSprite;
+        Sprite nextSprite = ResolveSprite();
 
-        if (jumping)
+        ApplySprite(nextSprite);
+    }
+
+    private void UpdateCharacterState()
+    {
+        if (playerPhysics != null)
         {
-            ResetRunAnimation();
-            nextSprite = jumpSprite;
-        }
-        else if (crouching && isShooting)
-        {
-            ResetRunAnimation();
-            nextSprite = crouchShootSprite;
-        }
-        else if (crouching)
-        {
-            ResetRunAnimation();
-            nextSprite = crouchSprite;
-        }
-        else if (isShooting)
-        {
-            ResetRunAnimation();
-            nextSprite = shootSprite;
-        }
-        else if (moving)
-        {
-            nextSprite = GetRunAnimationSprite();
+            Vector3 horizontalVelocity =
+                playerPhysics.HorizontalVelocity;
+
+            float threshold = movementThreshold;
+
+            IsMoving =
+                horizontalVelocity.sqrMagnitude >
+                threshold * threshold;
+
+            IsJumping =
+                !playerPhysics.IsGrounded ||
+                playerPhysics.VerticalVelocity > 0.1f;
         }
         else
         {
-            ResetRunAnimation();
-            nextSprite = idleSprite;
+            IsMoving = false;
+            IsJumping = false;
         }
 
-        SetSprite(nextSprite);
+        bool playerCrouching =
+            playerCrouch != null &&
+            playerCrouch.IsCrouching;
+
+        IsCrouching = playerCrouching || externalCrouch;
+    }
+
+    private Sprite ResolveSprite()
+    {
+        bool shooting = IsShooting ||
+            (botCombat != null && botCombat.IsAttackAnimating);
+
+        if (IsJumping)
+        {
+            ResetRunAnimation();
+            return jumpSprite;
+        }
+
+        if (IsCrouching && shooting)
+        {
+            ResetRunAnimation();
+            return crouchShootSprite;
+        }
+
+        if (IsCrouching)
+        {
+            ResetRunAnimation();
+            return crouchSprite;
+        }
+
+        if (shooting)
+        {
+            ResetRunAnimation();
+            return shootSprite;
+        }
+
+        if (IsMoving)
+        {
+            return GetRunAnimationSprite();
+        }
+
+        ResetRunAnimation();
+        return idleSprite;
     }
 
     private Sprite GetRunAnimationSprite()
@@ -99,15 +168,25 @@ public class PlayerSpriteController : MonoBehaviour
         if (runSprite2 == null)
             return runSprite;
 
+        float duration = Mathf.Max(0.01f, runFrameDuration);
+
         runFrameTimer += Time.deltaTime;
 
-        if (runFrameTimer >= runFrameDuration)
+        if (runFrameTimer >= duration)
         {
-            runFrameTimer = 0f;
-            showSecondRunFrame = !showSecondRunFrame;
+            int frameSteps = Mathf.FloorToInt(
+                runFrameTimer / duration
+            );
+
+            runFrameTimer -= frameSteps * duration;
+
+            if ((frameSteps & 1) != 0)
+                showSecondRunFrame = !showSecondRunFrame;
         }
 
-        return showSecondRunFrame ? runSprite2 : runSprite;
+        return showSecondRunFrame
+            ? runSprite2
+            : runSprite;
     }
 
     private void ResetRunAnimation()
@@ -116,25 +195,52 @@ public class PlayerSpriteController : MonoBehaviour
         showSecondRunFrame = false;
     }
 
-    private void SetSprite(Sprite nextSprite)
+    private void ApplySprite(Sprite nextSprite)
     {
-        if (nextSprite != null && nextSprite != currentSprite)
-        {
-            spriteRenderer.sprite = nextSprite;
-            currentSprite = nextSprite;
-        }
+        if (nextSprite == null)
+            return;
+
+        if (currentSprite == nextSprite)
+            return;
+
+        spriteRenderer.sprite = nextSprite;
+        currentSprite = nextSprite;
     }
 
-    private Vector2 GetMoveInput()
-    {
-        if (mobileInput != null && mobileInput.MoveInput.sqrMagnitude > 0.0001f)
-            return mobileInput.MoveInput;
-
-        return pcInput != null ? pcInput.MoveInput : Vector2.zero;
-    }
-
+    // Public API: shooting state.
     public void SetShooting(bool value)
     {
         isShooting = value;
+    }
+
+    // Public API: optional crouch state.
+    // Useful for future bot crouch behavior.
+    public void SetCrouching(bool value)
+    {
+        externalCrouch = value;
+    }
+
+    // Optional runtime sprite updates.
+    public void SetIdleSprite(Sprite sprite)
+    {
+        idleSprite = sprite;
+    }
+
+    public void SetRunSprites(Sprite first, Sprite second)
+    {
+        runSprite = first;
+        runSprite2 = second;
+        ResetRunAnimation();
+    }
+
+    public void SetJumpSprite(Sprite sprite)
+    {
+        jumpSprite = sprite;
+    }
+
+    public void SetShootSprites(Sprite normal, Sprite crouched)
+    {
+        shootSprite = normal;
+        crouchShootSprite = crouched;
     }
 }

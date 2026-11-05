@@ -2,35 +2,70 @@ using UnityEngine;
 
 public class BotCombat : MonoBehaviour
 {
+    [Header("Combat Settings")]
     [SerializeField] private BotSettings settings;
 
-    private float nextAttackTime;
+    [Header("Animation")]
+    [SerializeField, Min(0f)]
+    private float attackAnimationDuration = 0.3f;
 
-    public float AttackRange => settings != null ? settings.AttackRange : 1.5f;
+    private float nextAttackTime;
+    private float attackAnimationEndTime;
+
+    public float AttackRange =>
+        settings != null ? settings.AttackRange : 1.5f;
+
+    public bool IsAttackAnimating =>
+        Time.time < attackAnimationEndTime;
 
     private void Awake()
     {
-        if (settings == null) settings = GetComponent<BotSettings>();
+        if (settings == null)
+            settings = GetComponent<BotSettings>();
     }
 
     public bool TryAttack(Transform target)
     {
-        if (settings == null || target == null) return false;
-        if (Time.time < nextAttackTime) return false;
+        if (settings == null || target == null)
+            return false;
 
-        float dist = Vector3.Distance(transform.position, target.position);
-        if (dist > settings.AttackRange) return false;
+        if (Time.time < nextAttackTime)
+            return false;
 
-        // face target
-        Vector3 dir = target.position - transform.position;
-        dir.y = 0f;
-        if (dir.sqrMagnitude > 0.0001f)
-            transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
+        float distance = Vector3.Distance(
+            transform.position,
+            target.position
+        );
 
-        nextAttackTime = Time.time + settings.AttackCooldown;
+        if (distance > settings.AttackRange)
+            return false;
 
-        // Optional damage hook: if target has a component implementing IDamageable, apply damage.
-        var damageable = target.GetComponentInParent<IDamageable>();
+        // Face target.
+        Vector3 direction =
+            target.position - transform.position;
+
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.0001f)
+        {
+            transform.rotation = Quaternion.LookRotation(
+                direction,
+                Vector3.up
+            );
+        }
+
+        // Start attack cooldown.
+        nextAttackTime =
+            Time.time + settings.AttackCooldown;
+
+        // Trigger attack animation.
+        attackAnimationEndTime =
+            Time.time + attackAnimationDuration;
+
+        // Apply damage if target supports IDamageable.
+        IDamageable damageable =
+            target.GetComponentInParent<IDamageable>();
+
         if (damageable != null)
             damageable.TakeDamage(1f);
 
@@ -38,7 +73,7 @@ public class BotCombat : MonoBehaviour
     }
 }
 
-// Optional interface for damageable targets. Implement on player/enemies if desired.
+// Optional interface for damageable targets.
 public interface IDamageable
 {
     void TakeDamage(float amount);
