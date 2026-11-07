@@ -27,9 +27,7 @@ public class BotController : MonoBehaviour
 
     private float visionTimer;
     private float stateEvalTimer;
-    private float reactionTimer;
     private float wanderTimer;
-    private PerceptionStatus lastPerceptionStatus;
     private Vector3 wanderTarget;
     private bool hasWanderTarget;
 
@@ -44,9 +42,12 @@ public class BotController : MonoBehaviour
     private int strafeDirection = 1;
 
     private float lastDamageTime = -999f;
+    private float lastFleeTime = -999f;
 
     public bool HasBeenDamagedRecently =>
         settings != null && Time.time - lastDamageTime <= settings.DamageMemoryDuration;
+
+    public float LastFleeTime => lastFleeTime;
 
     public BotSettings Settings => settings;
     public BotPerception Perception => perception;
@@ -129,10 +130,17 @@ public class BotController : MonoBehaviour
 
     private void OnBotTakeDamage(float amount)
     {
+        // Selalu catat waktu damage terakhir (untuk keputusan Chase vs Patrol setelah kabur).
+        lastDamageTime = Time.time;
+
+        // Cek cooldown flee: jika masih dalam cooldown, tidak kabur.
+        if (settings != null && Time.time - lastFleeTime < settings.FleeCooldown)
+            return; // masih cooldown, abaikan damage untuk flee
+
         // When shot, interrupt current behavior and flee for a set duration.
         isFleeing = true;
         fleeTimer = settings != null ? settings.FleeDuration : 2f;
-        lastDamageTime = Time.time; // ingat bahwa player sudah pernah menembak
+        lastFleeTime = Time.time;   // catat waktu terakhir kabur (cooldown)
         justDashed = false; // allow dash on next evaluate
     }
 

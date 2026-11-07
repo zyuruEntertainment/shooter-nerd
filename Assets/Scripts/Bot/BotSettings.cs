@@ -77,6 +77,9 @@ public class BotSettings : MonoBehaviour
     [Tooltip("How long the bot remembers it was damaged by the player (used to decide Patrol vs Chase).")]
     [SerializeField, Min(0f)] private float damageMemoryDuration = 10f;
 
+    [Tooltip("Minimum seconds between flees (cooldown). Bot tidak akan kabur lagi jika masih dalam cooldown.")]
+    [SerializeField, Min(0f)] private float fleeCooldown = 5f;
+
     [Header("Jump")]
     [Tooltip("Distance to player at which jumping becomes considered.")]
     [SerializeField, Min(0f)] private float jumpTriggerDistance = 4f;
@@ -146,6 +149,7 @@ public class BotSettings : MonoBehaviour
     public float StrafeChangeInterval => strafeChangeInterval;
     public float FleeSpeed => fleeSpeed;
     public float FleeDuration => fleeDuration;
+    public float FleeCooldown => fleeCooldown;
     public float DamageMemoryDuration => damageMemoryDuration;
     public float JumpTriggerDistance => jumpTriggerDistance;
     public float JumpCooldown => jumpCooldown;
