@@ -106,11 +106,20 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Fire()
     {
-        if (Time.time < nextFireTime || currentAmmo <= 0 || aimCamera == null)
+        if (currentAmmo <= 0 || aimCamera == null)
+            return;
+
+        float fireSensitivity = SensitivitySettings.Instance != null
+            ? SensitivitySettings.Instance.FireSensitivity
+            : 1f;
+
+        float interval = fireInterval / fireSensitivity;
+
+        if (Time.time < nextFireTime)
             return;
 
         currentAmmo--;
-        nextFireTime = Time.time + fireInterval;
+        nextFireTime = Time.time + interval;
 
         UpdateAmmoUI();
         PlayShootingAnimation();

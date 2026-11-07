@@ -8,8 +8,10 @@ public enum BotState
     Patrol,
     Investigate,
     Chase,
+    Strafe,
     Attack,
     Search,
+    Flee,
     Recover
 }
 

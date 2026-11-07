@@ -150,13 +150,14 @@ public class PlayerMovement : MonoBehaviour
         if (lookInput.sqrMagnitude < 0.0001f)
             return;
 
-        float sensitivity = 1f;
+        float sensitivity = SensitivitySettings.Instance != null
+            ? SensitivitySettings.Instance.LookSensitivity
+            : 1f;
 
-        if (SensitivitySettings.Instance != null)
-            sensitivity = SensitivitySettings.Instance.LookSensitivity;
+        float deltaTime = Time.deltaTime;
 
-        float mouseX = lookInput.x * sensitivity;
-        float mouseY = lookInput.y * sensitivity;
+        float mouseX = lookInput.x * sensitivity * deltaTime;
+        float mouseY = lookInput.y * sensitivity * deltaTime;
 
         transform.Rotate(Vector3.up * mouseX);
 

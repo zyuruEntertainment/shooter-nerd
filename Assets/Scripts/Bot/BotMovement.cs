@@ -63,7 +63,7 @@ public class BotMovement : MonoBehaviour
         }
     }
 
-    public void Tick(float deltaTime, float desiredSpeed, bool canMove)
+    public void Tick(float deltaTime, float desiredSpeed, bool canMove, bool rotateTowardMovement = true)
     {
         if (controller == null || physics == null) return;
 
@@ -104,7 +104,7 @@ public class BotMovement : MonoBehaviour
             }
 
             // rotation toward movement direction
-            if (steerDir.sqrMagnitude > 0.0001f)
+            if (rotateTowardMovement && steerDir.sqrMagnitude > 0.0001f)
             {
                 float rotSpeed = settings != null ? settings.RotationSpeed : 720f;
                 Quaternion targetRot = Quaternion.LookRotation(steerDir, Vector3.up);

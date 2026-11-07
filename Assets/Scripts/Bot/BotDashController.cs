@@ -20,14 +20,37 @@ public class BotDashController : MonoBehaviour
     }
 
     // Call periodically while chasing/attacking.
-    public void TryDash(Vector3 toPlayer, bool allowDash)
+    // If forceDash is true, dash immediately regardless of distance (used while fleeing).
+    public void TryDash(Vector3 direction, bool allowDash, bool forceDash = false)
     {
         if (settings == null || physics == null || playerDash == null) return;
         if (!allowDash) { ResetClose(); return; }
         if (!physics.IsGrounded) { ResetClose(); return; }
         if (playerDash.IsDashing) { ResetClose(); return; }
 
-        float dist = toPlayer.magnitude;
+        if (forceDash)
+        {
+            Vector3 dashDir = direction;
+            dashDir.y = 0f;
+            if (dashDir.sqrMagnitude < 0.0001f) dashDir = -transform.forward;
+            dashDir.Normalize();
+
+            float checkDist1 = 4f;
+            Vector3 origin1 = transform.position + Vector3.up * 0.5f;
+            if (Physics.Raycast(origin1, dashDir, out RaycastHit hit1, checkDist1))
+            {
+                GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+                if (playerObj == null || hit1.transform == null || (hit1.transform != playerObj.transform && !hit1.transform.IsChildOf(playerObj.transform)))
+                    return;
+            }
+
+            ResetClose();
+            bool dashStarted = playerDash.Dash(dashDir);
+            if (dashStarted) ResetClose();
+            return;
+        }
+
+        float dist = direction.magnitude;
         bool close = dist <= settings.CloseRangeThreshold;
 
         if (close)
@@ -47,19 +70,19 @@ public class BotDashController : MonoBehaviour
         if (!close || closeTimer < settings.DashTriggerDuration) return;
 
         // Determine dash direction: away from player to create space.
-        Vector3 away = -toPlayer;
+        Vector3 away = -direction;
         away.y = 0f;
         if (away.sqrMagnitude < 0.0001f) away = -transform.forward;
         away.Normalize();
 
         // safety check: no obstacle along dash path
-        float checkDist = 4f; // approximate; PlayerDash uses its own distance
-        Vector3 origin = transform.position + Vector3.up * 0.5f;
-        if (Physics.Raycast(origin, away, out RaycastHit hit, checkDist))
+        float checkDist2 = 4f; // approximate; PlayerDash uses its own distance
+        Vector3 origin2 = transform.position + Vector3.up * 0.5f;
+        if (Physics.Raycast(origin2, away, out RaycastHit hit2, checkDist2))
         {
             // if obstacle is not player, abort
             GameObject p = GameObject.FindGameObjectWithTag("Player");
-            if (p == null || hit.transform == null || (hit.transform != p.transform && !hit.transform.IsChildOf(p.transform)))
+            if (p == null || hit2.transform == null || (hit2.transform != p.transform && !hit2.transform.IsChildOf(p.transform)))
                 return;
         }
 

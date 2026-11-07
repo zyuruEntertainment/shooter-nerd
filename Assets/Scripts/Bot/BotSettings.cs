@@ -57,6 +57,26 @@ public class BotSettings : MonoBehaviour
     [Tooltip("Cooldown between attacks in seconds.")]
     [SerializeField, Min(0f)] private float attackCooldown = 0.8f;
 
+    [Header("Engage / Strafe")]
+    [Tooltip("Distance at which the bot stops chasing and starts strafing/shooting instead of closing in.")]
+    [SerializeField, Min(0f)] private float engageRange = 10f;
+
+    [Tooltip("Speed while strafing left/right around the player.")]
+    [SerializeField, Min(0f)] private float strafeSpeed = 3.5f;
+
+    [Tooltip("Seconds before switching strafe direction.")]
+    [SerializeField, Min(0.1f)] private float strafeChangeInterval = 2f;
+
+    [Header("Flee")]
+    [Tooltip("Speed while fleeing after taking damage.")]
+    [SerializeField, Min(0f)] private float fleeSpeed = 6f;
+
+    [Tooltip("How long the bot flees after taking damage.")]
+    [SerializeField, Min(0f)] private float fleeDuration = 2f;
+
+    [Tooltip("How long the bot remembers it was damaged by the player (used to decide Patrol vs Chase).")]
+    [SerializeField, Min(0f)] private float damageMemoryDuration = 10f;
+
     [Header("Jump")]
     [Tooltip("Distance to player at which jumping becomes considered.")]
     [SerializeField, Min(0f)] private float jumpTriggerDistance = 4f;
@@ -121,6 +141,12 @@ public class BotSettings : MonoBehaviour
     public float AirDeceleration => airDeceleration;
     public float AttackRange => attackRange;
     public float AttackCooldown => attackCooldown;
+    public float EngageRange => engageRange;
+    public float StrafeSpeed => strafeSpeed;
+    public float StrafeChangeInterval => strafeChangeInterval;
+    public float FleeSpeed => fleeSpeed;
+    public float FleeDuration => fleeDuration;
+    public float DamageMemoryDuration => damageMemoryDuration;
     public float JumpTriggerDistance => jumpTriggerDistance;
     public float JumpCooldown => jumpCooldown;
     public float JumpProbability => jumpProbability;

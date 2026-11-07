@@ -35,6 +35,7 @@ public class BotStateMachine : MonoBehaviour
             case BotState.Investigate: stateTimer = controller.Settings.InvestigateDuration; break;
             case BotState.Search: stateTimer = controller.Settings.SearchDuration; break;
             case BotState.Recover: stateTimer = controller.Settings.RecoverDuration; break;
+            case BotState.Flee: stateTimer = controller.Settings.FleeDuration; break;
             default: stateTimer = 0f; break;
         }
     }
@@ -57,11 +58,40 @@ public class BotStateMachine : MonoBehaviour
             return;
         }
 
+        // Flee takes highest priority when bot just took damage.
+        if (controller.IsFleeing)
+        {
+            if (CurrentState != BotState.Flee)
+                SetState(BotState.Flee);
+            return;
+        }
+
         BotState desired = CurrentState;
+
+        // If currently fleeing but timer expired, decide next state.
+        if (CurrentState == BotState.Flee && stateTimer <= 0f)
+        {
+            // Setelah kabur selesai: kalau sudah pernah ditembak player, langsung Chase (mengejar + tembak).
+            // Kalau belum pernah ditembak, kembali ke Patrol/Idle.
+            if (controller.HasBeenDamagedRecently)
+            {
+                float fleeTimeInState = Time.time - stateStartTime;
+                bool fleeCanSwitch = fleeTimeInState >= s.MinStateDuration;
+                if (fleeCanSwitch)
+                    desired = BotState.Chase;
+                return;
+            }
+            // fall through to normal evaluation below
+        }
 
         if (visible)
         {
-            desired = (dist <= s.AttackRange) ? BotState.Attack : BotState.Chase;
+            if (dist <= s.AttackRange)
+                desired = BotState.Attack;
+            else if (dist <= s.EngageRange)
+                desired = BotState.Strafe;
+            else
+                desired = BotState.Chase;
         }
         else if (status == PerceptionStatus.LastKnown)
         {
@@ -73,14 +103,21 @@ public class BotStateMachine : MonoBehaviour
         }
         else
         {
-            desired = controller.HasPatrolPoints ? BotState.Patrol : BotState.Idle;
+            // Kondisi 1: tidak pernah ditembak player → Patrol / Idle.
+            // Kondisi 2: sudah pernah ditembak player → Chase (mengejar dan menembak).
+            if (controller.HasBeenDamagedRecently)
+                desired = BotState.Chase;
+            else
+                desired = controller.HasPatrolPoints ? BotState.Patrol : BotState.Idle;
         }
 
-        // keep investigate/search for their duration if no new info
+        // keep investigate/search/flee for their duration if no new info
         if (CurrentState == BotState.Investigate && stateTimer > 0f && !visible && status != PerceptionStatus.Heard)
             desired = BotState.Investigate;
         if (CurrentState == BotState.Search && stateTimer > 0f && !visible && status != PerceptionStatus.LastKnown)
             desired = BotState.Search;
+        if (CurrentState == BotState.Flee && stateTimer > 0f && !visible)
+            desired = BotState.Flee;
         if (CurrentState == BotState.Recover && stateTimer > 0f && !visible)
             desired = BotState.Recover;
 

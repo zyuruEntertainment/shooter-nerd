@@ -37,6 +37,23 @@ public class BotJumpController : MonoBehaviour
         nextJumpTime = Time.time + settings.JumpCooldown;
     }
 
+    // Lompat sesekali saat mengejar, tidak dibatasi oleh jarak ke player.
+    public void TryChaseJump()
+    {
+        if (settings == null || physics == null || playerJump == null) return;
+        if (!physics.IsGrounded) return;
+        if (Time.time < nextJumpTime) return;
+
+        if (Random.value > settings.JumpProbability)
+        {
+            nextJumpTime = Time.time + 0.3f;
+            return;
+        }
+
+        playerJump.Jump();
+        nextJumpTime = Time.time + settings.JumpCooldown;
+    }
+
     public bool HasForwardClearance(Vector3 forward, float distance)
     {
         if (physics == null) return true;

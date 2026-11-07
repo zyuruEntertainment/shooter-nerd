@@ -9,6 +9,8 @@ public class CombatHealth : MonoBehaviour, IDamageable
     public float MaxHealth => maxHealth;
     public bool IsDead => CurrentHealth <= 0f;
 
+    public event System.Action<float> OnTakeDamage;
+
     private void Awake()
     {
         CurrentHealth = maxHealth;
@@ -20,6 +22,7 @@ public class CombatHealth : MonoBehaviour, IDamageable
             return;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
+        OnTakeDamage?.Invoke(amount);
 
         if (IsDead)
             Die();
