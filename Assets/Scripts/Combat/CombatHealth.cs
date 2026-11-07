@@ -39,11 +39,21 @@ public class CombatHealth : MonoBehaviour, IDamageable
         );
     }
 
+    /// <summary>
+    /// Reset health ke maksimal (dapat dipanggil meski dalam keadaan mati).
+    /// Digunakan oleh RespawnManager saat objek respawning.
+    /// </summary>
+    public void ResetToMaxHealth()
+    {
+        CurrentHealth = maxHealth;
+    }
+
     private void Die()
     {
-        Debug.Log($"{gameObject.name} eliminated.", this);
+        Debug.Log($"{gameObject.name} eliminated. Respawning...", this);
 
-        // Bisa diganti dengan sistem respawn atau death animation.
-        gameObject.SetActive(false);
+        // Ganti SetActive(false) dengan respawn sistem.
+        // Objek akan dipindahkan ke titik respawn sesuai tag-nya dan health di-reset.
+        RespawnManager.Instance?.Respawn(gameObject);
     }
 }

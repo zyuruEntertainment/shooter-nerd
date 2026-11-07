@@ -9,6 +9,9 @@ public class BotCombat : MonoBehaviour
     [SerializeField, Min(0f)]
     private float attackAnimationDuration = 0.3f;
 
+    [SerializeField, Min(0f)]
+    private float attackDamage = 20f; // sejajar dengan damage pemain
+
     private float nextAttackTime;
     private float attackAnimationEndTime;
 
@@ -66,8 +69,10 @@ public class BotCombat : MonoBehaviour
         IDamageable damageable =
             target.GetComponentInParent<IDamageable>();
 
+        float actualDamage = settings != null ? settings.AttackDamage : attackDamage;
+
         if (damageable != null)
-            damageable.TakeDamage(1f);
+            damageable.TakeDamage(actualDamage);
 
         return true;
     }

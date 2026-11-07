@@ -35,7 +35,7 @@ public class BotStateMachine : MonoBehaviour
             case BotState.Investigate: stateTimer = controller.Settings.InvestigateDuration; break;
             case BotState.Search: stateTimer = controller.Settings.SearchDuration; break;
             case BotState.Recover: stateTimer = controller.Settings.RecoverDuration; break;
-            case BotState.Flee: stateTimer = controller.Settings.FleeDuration; break;
+            case BotState.Charge: stateTimer = controller.Settings.ChargeDuration; break;
             default: stateTimer = 0f; break;
         }
     }
@@ -49,6 +49,7 @@ public class BotStateMachine : MonoBehaviour
         PerceptionStatus status = controller.Perception != null ? controller.Perception.Status : PerceptionStatus.None;
         float dist = controller.DistanceToPlayer;
         bool visible = status == PerceptionStatus.Visible;
+        bool canReact = controller.CanReact;
 
         // handle recover timer
         if (controller.JustDashed)
@@ -58,26 +59,26 @@ public class BotStateMachine : MonoBehaviour
             return;
         }
 
-        // Flee takes highest priority when bot just took damage.
-        if (controller.IsFleeing)
+        // Charge takes highest priority when bot just took damage.
+        if (controller.IsCharging)
         {
-            if (CurrentState != BotState.Flee)
-                SetState(BotState.Flee);
+            if (CurrentState != BotState.Charge)
+                SetState(BotState.Charge);
             return;
         }
 
         BotState desired = CurrentState;
 
-        // If currently fleeing but timer expired, decide next state.
-        if (CurrentState == BotState.Flee && stateTimer <= 0f)
+        // If currently charging but timer expired, decide next state.
+        if (CurrentState == BotState.Charge && stateTimer <= 0f)
         {
-            // Setelah kabur selesai: kalau sudah pernah ditembak player, langsung Chase (mengejar + tembak).
+            // Setelah charge selesai: kalau sudah pernah ditembak player, langsung Chase (mengejar + tembak).
             // Kalau belum pernah ditembak, kembali ke Patrol/Idle.
             if (controller.HasBeenDamagedRecently)
             {
-                float fleeTimeInState = Time.time - stateStartTime;
-                bool fleeCanSwitch = fleeTimeInState >= s.MinStateDuration;
-                if (fleeCanSwitch)
+                float chargeTimeInState = Time.time - stateStartTime;
+                bool chargeCanSwitch = chargeTimeInState >= s.MinStateDuration;
+                if (chargeCanSwitch)
                     desired = BotState.Chase;
                 return;
             }
@@ -86,12 +87,15 @@ public class BotStateMachine : MonoBehaviour
 
         if (visible)
         {
-            if (dist <= s.AttackRange)
-                desired = BotState.Attack;
-            else if (dist <= s.EngageRange)
-                desired = BotState.Strafe;
-            else
-                desired = BotState.Chase;
+            // Jeda reaksi: bot tidak langsung mengetahui pemain terlihat.
+            if (canReact)
+            {
+                if (dist <= s.EngageRange)
+                    desired = BotState.Strafe; // lingkari + tembak, jangan berhenti diam
+                else
+                    desired = BotState.Chase; // mendekati pemain
+            }
+            // Jika belum bisa bereaksi, tetap pada state saat ini.
         }
         else if (status == PerceptionStatus.LastKnown)
         {
@@ -116,8 +120,8 @@ public class BotStateMachine : MonoBehaviour
             desired = BotState.Investigate;
         if (CurrentState == BotState.Search && stateTimer > 0f && !visible && status != PerceptionStatus.LastKnown)
             desired = BotState.Search;
-        if (CurrentState == BotState.Flee && stateTimer > 0f && !visible)
-            desired = BotState.Flee;
+        if (CurrentState == BotState.Charge && stateTimer > 0f && !visible)
+            desired = BotState.Charge;
         if (CurrentState == BotState.Recover && stateTimer > 0f && !visible)
             desired = BotState.Recover;
 
@@ -126,8 +130,8 @@ public class BotStateMachine : MonoBehaviour
         float timeInState = Time.time - stateStartTime;
         bool canSwitch = timeInState >= s.MinStateDuration;
 
-        // Visible player can interrupt immediately.
-        bool interrupt = visible;
+        // Pemain terlihat dapat menginterupsi, tapi hanya jika reaksi sudah lewat.
+        bool interrupt = visible && canReact;
 
         if (interrupt || canSwitch)
         {

@@ -19,6 +19,10 @@ public class BotMovement : MonoBehaviour
 
     private float currentSpeed;
 
+    // Pengali kecepatan rotasi (1 = normal). BotController mengaturnya lebih tinggi
+    // saat Charge/Strafe agar bot berputar lebih lincah mengejar player.
+    public float RotationSpeedMultiplier { get; set; } = 1f;
+
     private void Awake()
     {
         if (settings == null) settings = GetComponent<BotSettings>();
@@ -106,7 +110,7 @@ public class BotMovement : MonoBehaviour
             // rotation toward movement direction
             if (rotateTowardMovement && steerDir.sqrMagnitude > 0.0001f)
             {
-                float rotSpeed = settings != null ? settings.RotationSpeed : 720f;
+                float rotSpeed = (settings != null ? settings.RotationSpeed : 720f) * RotationSpeedMultiplier;
                 Quaternion targetRot = Quaternion.LookRotation(steerDir, Vector3.up);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, rotSpeed * deltaTime);
             }

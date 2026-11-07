@@ -4,10 +4,10 @@ public class BotSettings : MonoBehaviour
 {
     [Header("Vision")]
     [Tooltip("Maximum distance at which the bot can see the player.")]
-    [SerializeField, Min(0f)] private float visionRange = 15f;
+    [SerializeField, Min(0f)] private float visionRange = 20f;
 
     [Tooltip("Field of view in degrees.")]
-    [SerializeField, Range(1f, 360f)] private float fieldOfView = 110f;
+    [SerializeField, Range(1f, 360f)] private float fieldOfView = 120f;
 
     [Tooltip("Layers that block vision (walls, obstacles).")]
     [SerializeField] private LayerMask visionObstacleMask = ~0;
@@ -16,7 +16,7 @@ public class BotSettings : MonoBehaviour
     [SerializeField] private LayerMask playerLayer = ~0;
 
     [Tooltip("Seconds between vision checks.")]
-    [SerializeField, Min(0.05f)] private float visionCheckInterval = 0.2f;
+    [SerializeField, Min(0.05f)] private float visionCheckInterval = 0.1f;
 
     [Tooltip("How long the bot remembers the last seen position.")]
     [SerializeField, Min(0f)] private float memoryDuration = 3f;
@@ -30,7 +30,7 @@ public class BotSettings : MonoBehaviour
     [SerializeField, Min(0f)] private float walkSpeed = 3f;
 
     [Tooltip("Speed used while chasing the player.")]
-    [SerializeField, Min(0f)] private float chaseSpeed = 5.5f;
+    [SerializeField, Min(0f)] private float chaseSpeed = 6.5f;
 
     [Tooltip("Speed used while patrolling.")]
     [SerializeField, Min(0f)] private float patrolSpeed = 2.5f;
@@ -62,23 +62,40 @@ public class BotSettings : MonoBehaviour
     [SerializeField, Min(0f)] private float engageRange = 10f;
 
     [Tooltip("Speed while strafing left/right around the player.")]
-    [SerializeField, Min(0f)] private float strafeSpeed = 3.5f;
+    [SerializeField, Min(0f)] private float strafeSpeed = 4.5f;
 
-    [Tooltip("Seconds before switching strafe direction.")]
-    [SerializeField, Min(0.1f)] private float strafeChangeInterval = 2f;
+    [Tooltip("Seconds before switching strafe direction (fallback when min/max not used).")]
+    [SerializeField, Min(0.1f)] private float strafeChangeInterval = 1.5f;
 
-    [Header("Flee")]
-    [Tooltip("Speed while fleeing after taking damage.")]
-    [SerializeField, Min(0f)] private float fleeSpeed = 6f;
+    [Header("Charge (replaces flee - bot charges AT player when damaged)")]
+    [Tooltip("Speed while charging at the player after taking damage (higher = harder to escape).")]
+    [SerializeField, Min(0f)] private float chargeSpeed = 9f;
 
-    [Tooltip("How long the bot flees after taking damage.")]
-    [SerializeField, Min(0f)] private float fleeDuration = 2f;
+    [Tooltip("How long the bot charges at the player after taking damage.")]
+    [SerializeField, Min(0f)] private float chargeDuration = 1.5f;
 
     [Tooltip("How long the bot remembers it was damaged by the player (used to decide Patrol vs Chase).")]
     [SerializeField, Min(0f)] private float damageMemoryDuration = 10f;
 
-    [Tooltip("Minimum seconds between flees (cooldown). Bot tidak akan kabur lagi jika masih dalam cooldown.")]
-    [SerializeField, Min(0f)] private float fleeCooldown = 5f;
+    [Tooltip("Minimum seconds between charges (cooldown). Bot tidak akan charger lagi jika masih dalam cooldown.")]
+    [SerializeField, Min(0f)] private float chargeCooldown = 4f;
+
+    [Header("Crouch (bot agility - makes bot harder to hit)")]
+    [Tooltip("Chance per second to crouch while charging.")]
+    [SerializeField, Range(0f, 1f)] private float crouchChance = 0.35f;
+
+    [Tooltip("How long the bot stays crouched.")]
+    [SerializeField, Min(0f)] private float crouchDuration = 0.8f;
+
+    [Tooltip("Cooldown between crouches.")]
+    [SerializeField, Min(0f)] private float crouchCooldown = 1.2f;
+
+    [Header("Agility")]
+    [Tooltip("Rotation speed multiplier while charging/strafing (higher = snappier turns).")]
+    [SerializeField, Min(0f)] private float agileRotationMultiplier = 1.6f;
+
+    [Tooltip("Jump chance while charging at the player.")]
+    [SerializeField, Range(0f, 1f)] private float chargeJumpChance = 0.6f;
 
     [Header("Jump")]
     [Tooltip("Distance to player at which jumping becomes considered.")]
@@ -127,6 +144,22 @@ public class BotSettings : MonoBehaviour
     [Tooltip("Seconds between picking a new wander point.")]
     [SerializeField, Min(0.5f)] private float wanderInterval = 4f;
 
+    [Header("Combat Balance (smarter / harder)")]
+    [Tooltip("Damage dealt by the bot (ranged + melee). Keep equal to player weapon damage for fairness.")]
+    [SerializeField, Min(0f)] private float attackDamage = 20f;
+
+    [Tooltip("Minimum seconds between strafe direction changes (unpredictable).")]
+    [SerializeField, Min(0.1f)] private float strafeMinInterval = 0.8f;
+
+    [Tooltip("Maximum seconds between strafe direction changes (unpredictable).")]
+    [SerializeField, Min(0.1f)] private float strafeMaxInterval = 2f;
+
+    [Tooltip("Seconds to lead the target when aiming (predicts player movement). Higher = harder to dodge.")]
+    [SerializeField, Min(0f)] private float leadTime = 0.35f;
+
+    [Tooltip("Chance to jump while in combat (strafe/attack) to avoid being hit.")]
+    [SerializeField, Range(0f, 1f)] private float combatJumpChance = 0.5f;
+
     public float VisionRange => visionRange;
     public float FieldOfView => fieldOfView;
     public LayerMask VisionObstacleMask => visionObstacleMask;
@@ -147,10 +180,15 @@ public class BotSettings : MonoBehaviour
     public float EngageRange => engageRange;
     public float StrafeSpeed => strafeSpeed;
     public float StrafeChangeInterval => strafeChangeInterval;
-    public float FleeSpeed => fleeSpeed;
-    public float FleeDuration => fleeDuration;
-    public float FleeCooldown => fleeCooldown;
+    public float ChargeSpeed => chargeSpeed;
+    public float ChargeDuration => chargeDuration;
+    public float ChargeCooldown => chargeCooldown;
     public float DamageMemoryDuration => damageMemoryDuration;
+    public float CrouchChance => crouchChance;
+    public float CrouchDuration => crouchDuration;
+    public float CrouchCooldown => crouchCooldown;
+    public float AgileRotationMultiplier => agileRotationMultiplier;
+    public float ChargeJumpChance => chargeJumpChance;
     public float JumpTriggerDistance => jumpTriggerDistance;
     public float JumpCooldown => jumpCooldown;
     public float JumpProbability => jumpProbability;
@@ -165,4 +203,10 @@ public class BotSettings : MonoBehaviour
     public float ReactionTimeMax => reactionTimeMax;
     public float WanderRadius => wanderRadius;
     public float WanderInterval => wanderInterval;
+
+    public float AttackDamage => attackDamage;
+    public float StrafeMinInterval => strafeMinInterval;
+    public float StrafeMaxInterval => strafeMaxInterval;
+    public float LeadTime => leadTime;
+    public float CombatJumpChance => combatJumpChance;
 }

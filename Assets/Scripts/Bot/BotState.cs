@@ -11,7 +11,7 @@ public enum BotState
     Strafe,
     Attack,
     Search,
-    Flee,
+    Charge,
     Recover
 }
 

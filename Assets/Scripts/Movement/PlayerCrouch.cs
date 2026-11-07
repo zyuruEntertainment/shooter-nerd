@@ -25,6 +25,10 @@ public class PlayerCrouch : MonoBehaviour
 
     public bool IsCrouching { get; private set; }
 
+    // Ketika true, Update() tidak akan menimpa status jongkok dari input keyboard,
+    // sehingga sistem eksternal (misal bot AI) dapat mengatur jongkok via SetCrouching().
+    public bool IgnoreInput { get; set; }
+
     private void Awake()
     {
         if (capsuleCollider == null)
@@ -51,6 +55,10 @@ public class PlayerCrouch : MonoBehaviour
 
     private void Update()
     {
+        // Jika diinialisasi oleh sistem eksternal (bot), jangan acak-nginputkan status jongkok.
+        if (IgnoreInput)
+            return;
+
         Keyboard keyboard = Keyboard.current;
         bool keyHeld = keyboard != null && keyboard[crouchKey].isPressed;
         bool keyPressed = keyboard != null && keyboard[crouchKey].wasPressedThisFrame;

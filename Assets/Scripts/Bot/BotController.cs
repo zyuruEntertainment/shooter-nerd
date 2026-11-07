@@ -14,7 +14,6 @@ public class BotController : MonoBehaviour
     private BotHearing hearing;
     private BotPerception perception;
     private BotMovement movement;
-    private BotCombat combat;
     private BotRangedCombat rangedCombat;
     private BotJumpController jumpController;
     private BotDashController dashController;
@@ -24,6 +23,7 @@ public class BotController : MonoBehaviour
     private PlayerPhysics physics;
     private CombatHealth health;
     private PlayerSpriteController spriteController;
+    private PlayerCrouch crouch;
 
     private float visionTimer;
     private float stateEvalTimer;
@@ -33,29 +33,44 @@ public class BotController : MonoBehaviour
 
     private int patrolIndex;
     private Vector3 lastPlayerPosition;
+    private Vector3 playerVelocity; // untuk leading (prediksi gerakan pemain)
 
     private bool justDashed;
-    private bool isFleeing;
-    private float fleeTimer;
+    private bool isCharging;
+    private float chargeTimer;
     private float strafeTimer;
     private float chaseJumpTimer;
     private int strafeDirection = 1;
+    private float strafeChangeInterval;
+
+    // Crouch (jongkok) untuk membuat bot lebih sulit ditembak saat charge.
+    private bool isCrouching;
+    private float crouchTimer;
+    private float crouchCooldownTimer;
 
     private float lastDamageTime = -999f;
-    private float lastFleeTime = -999f;
+    private float lastChargeTime = -999f;
+
+    // Reaksi: jeda sebelum bot merespons pemain yang baru terlihat.
+    private float reactionTimer;
+    private float requiredReactionDelay;
+    private bool wasVisible;
 
     public bool HasBeenDamagedRecently =>
         settings != null && Time.time - lastDamageTime <= settings.DamageMemoryDuration;
 
-    public float LastFleeTime => lastFleeTime;
+    public float LastChargeTime => lastChargeTime;
 
     public BotSettings Settings => settings;
     public BotPerception Perception => perception;
     public BotStateMachine StateMachine => stateMachine;
     public bool HasPatrolPoints => patrolPoints != null && patrolPoints.Length > 0;
     public bool JustDashed => justDashed;
-    public bool IsFleeing => isFleeing;
+    public bool IsCharging => isCharging;
     public void ClearJustDashed() { justDashed = false; }
+
+    // Apakah reaksi sudah lewat (bisa berubah ke keadaan berkelahi).
+    public bool CanReact => reactionTimer <= 0f;
 
     public float DistanceToPlayer
     {
@@ -64,6 +79,14 @@ public class BotController : MonoBehaviour
             if (playerTarget == null) return float.MaxValue;
             return Vector3.Distance(transform.position, playerTarget.position);
         }
+    }
+
+    // Prediksi posisi pemain untuk pelarian/antisipasi.
+    public Vector3 PredictedPlayerPosition(float leadTime)
+    {
+        if (playerTarget == null) return transform.position;
+        Vector3 vel = physics != null ? physics.HorizontalVelocity : Vector3.zero;
+        return playerTarget.position + vel * leadTime;
     }
 
     private void Awake()
@@ -80,7 +103,6 @@ public class BotController : MonoBehaviour
         hearing = GetComponent<BotHearing>();
         perception = GetComponent<BotPerception>();
         movement = GetComponent<BotMovement>();
-        combat = GetComponent<BotCombat>();
         rangedCombat = GetComponent<BotRangedCombat>();
         jumpController = GetComponent<BotJumpController>();
         dashController = GetComponent<BotDashController>();
@@ -90,14 +112,13 @@ public class BotController : MonoBehaviour
         physics = GetComponent<PlayerPhysics>();
         health = GetComponent<CombatHealth>();
         spriteController = GetComponent<PlayerSpriteController>();
+        crouch = GetComponent<PlayerCrouch>();
+
+        // Bot mengontrol status jongkok secara terprogram (bukan input keyboard).
+        if (crouch != null)
+            crouch.IgnoreInput = true;
 
         if (stateMachine == null) stateMachine = gameObject.AddComponent<BotStateMachine>();
-
-        // ensure perception references
-        if (perception != null)
-        {
-            // reflection not needed; perception uses GetComponent in Awake already
-        }
 
         if (vision != null)
         {
@@ -111,37 +132,44 @@ public class BotController : MonoBehaviour
         }
 
         if (vision != null) vision.SetTarget(playerTarget);
-        if (hearing != null) { /* hearing uses events */ }
 
-        // Subscribe to damage so bot can flee when shot.
+        // Subscribe ke damage agar bot dapat pelarian saat ditembak.
         if (health != null)
             health.OnTakeDamage += OnBotTakeDamage;
 
-        visionTimer = settings != null ? settings.VisionCheckInterval : 0.2f;
-        stateEvalTimer = settings != null ? settings.StateEvaluationInterval : 0.15f;
-        reactionTimer = RandomReactionDelay();
+        visionTimer = settings.VisionCheckInterval;
+        stateEvalTimer = settings.StateEvaluationInterval;
         wanderTimer = 0f;
+        strafeChangeInterval = Random.Range(settings.StrafeMinInterval, settings.StrafeMaxInterval);
 
         justDashed = false;
-        isFleeing = false;
-        fleeTimer = 0f;
+        isCharging = false;
+        chargeTimer = 0f;
         strafeTimer = 0f;
+        reactionTimer = 0f;
+        requiredReactionDelay = 0f;
+        wasVisible = false;
+        isCrouching = false;
+        crouchTimer = 0f;
+        crouchCooldownTimer = 0f;
     }
 
     private void OnBotTakeDamage(float amount)
     {
-        // Selalu catat waktu damage terakhir (untuk keputusan Chase vs Patrol setelah kabur).
         lastDamageTime = Time.time;
 
-        // Cek cooldown flee: jika masih dalam cooldown, tidak kabur.
-        if (settings != null && Time.time - lastFleeTime < settings.FleeCooldown)
-            return; // masih cooldown, abaikan damage untuk flee
+        // Cooldown charge: jika masih dalam cooldown, tidak charge lagi.
+        if (settings != null && Time.time - lastChargeTime < settings.ChargeCooldown)
+            return;
 
-        // When shot, interrupt current behavior and flee for a set duration.
-        isFleeing = true;
-        fleeTimer = settings != null ? settings.FleeDuration : 2f;
-        lastFleeTime = Time.time;   // catat waktu terakhir kabur (cooldown)
-        justDashed = false; // allow dash on next evaluate
+        // Saat ditembak, hentikan perilaku lalu CHARGE ke arah player (menyerang balik).
+        isCharging = true;
+        chargeTimer = settings.ChargeDuration;
+        lastChargeTime = Time.time;
+        justDashed = false; // izinkan dash pada evaluasi berikutnya
+        isCrouching = false;
+        crouchTimer = 0f;
+        crouchCooldownTimer = 0f;
     }
 
     private void Start()
@@ -155,7 +183,23 @@ public class BotController : MonoBehaviour
 
         float dt = Time.deltaTime;
 
-        // Vision check on interval
+        // Track kecepatan pemain untuk prediksi (leading).
+        TrackPlayerVelocity(dt);
+
+        // Reaksi timer.
+        if (reactionTimer > 0f)
+            reactionTimer -= dt;
+
+        // Deteksi transisi terlihat -> atur jeda reaksi acak.
+        bool visibleNow = vision != null && vision.CanSeePlayer;
+        if (visibleNow && !wasVisible)
+        {
+            requiredReactionDelay = Random.Range(settings.ReactionTimeMin, settings.ReactionTimeMax);
+            reactionTimer = requiredReactionDelay;
+        }
+        wasVisible = visibleNow;
+
+        // Vision check pada interval.
         visionTimer -= dt;
         if (visionTimer <= 0f && vision != null)
         {
@@ -163,16 +207,10 @@ public class BotController : MonoBehaviour
             visionTimer = settings.VisionCheckInterval;
         }
 
-        // Perception refresh (cheap)
+        // Perception refresh (murah).
         if (perception != null) perception.Refresh();
 
-        // Reaction delay when player first becomes visible.
-        if (perception != null && perception.Status == PerceptionStatus.Visible && lastPerceptionStatus != PerceptionStatus.Visible)
-        {
-            reactionTimer = RandomReactionDelay();
-        }
-        if (perception != null) lastPerceptionStatus = perception.Status;
-        // State evaluation on interval
+        // State evaluation pada interval.
         stateEvalTimer -= dt;
         if (stateEvalTimer <= 0f)
         {
@@ -180,32 +218,36 @@ public class BotController : MonoBehaviour
             stateEvalTimer = settings.StateEvaluationInterval;
         }
 
-        // Reaction delay timer (small) - delays target position update
-        if (reactionTimer > 0f) reactionTimer -= dt;
-
-        // Update movement destination based on state
+        // Update tujuan gerakan berdasarkan state.
         UpdateMovementDestination();
 
-        // Movement tick every frame
+        // Movement tick setiap frame.
         if (movement != null)
         {
             float speed = GetCurrentSpeed();
             bool canMove = CanMoveInCurrentState();
-            // Saat Strafe dan Flee: bot hanya geser posisi, jangan memutar tubuh ke arah gerak.
-            // Rotasi tangani oleh BotRangedCombat (aim lock ke player).
-            bool rotateTowardMovement = stateMachine == null ||
-                (stateMachine.CurrentState != BotState.Strafe &&
-                 stateMachine.CurrentState != BotState.Flee);
+            BotState st = stateMachine != null ? stateMachine.CurrentState : BotState.Idle;
+            // Saat Strafe / Attack / Charge: jangan memutar tubuh ke arah gerak (bot menghadap player).
+            // Rotasi tangani oleh BotRangedCombat (aim lock ke pemain).
+            bool rotateTowardMovement = st != BotState.Strafe &&
+                                        st != BotState.Attack &&
+                                        st != BotState.Charge;
+
+            // Rotasi lebih lincah saat Charge dan Strafe (mengejar/mengelilingi player).
+            movement.RotationSpeedMultiplier = (st == BotState.Charge || st == BotState.Strafe)
+                ? settings.AgileRotationMultiplier : 1f;
+
             movement.Tick(dt, speed, canMove, rotateTowardMovement);
         }
 
-        // Jump / dash attempts
-        BotState st = stateMachine != null ? stateMachine.CurrentState : BotState.Idle;
-        bool chasing = st == BotState.Chase || st == BotState.Attack || st == BotState.Strafe;
-        bool fleeing = st == BotState.Flee;
-        if ((chasing || fleeing) && playerTarget != null)
+        // Jump / dash saat mengejar atau berkelahi atau pelarian.
+        BotState curState = stateMachine != null ? stateMachine.CurrentState : BotState.Idle;
+        bool chasing = curState == BotState.Chase || curState == BotState.Attack || curState == BotState.Strafe;
+        bool charging = curState == BotState.Charge;
+        bool combatOrCharge = chasing || charging;
+        if (combatOrCharge && playerTarget != null)
         {
-            float dist = Vector3.Distance(transform.position, playerTarget.position);
+            float dist = DistanceToPlayer;
             Vector3 toPlayer = playerTarget.position - transform.position;
 
             if (jumpController != null)
@@ -216,60 +258,72 @@ public class BotController : MonoBehaviour
 
             if (dashController != null)
             {
-                if (fleeing)
-                {
-                    // Dash away from player while fleeing.
-                    Vector3 away = transform.position - playerTarget.position;
-                    away.y = 0f;
-                    if (away.sqrMagnitude < 0.0001f) away = -transform.forward;
-                    dashController.TryDash(away, true, forceDash: true);
-                }
+                if (charging)
+                    HandleChargeDash(toPlayer); // dash TERUS arah player saat charge
                 else
-                {
-                    dashController.TryDash(toPlayer, true);
-                }
+                    HandleCombatDash(toPlayer, dist);
             }
         }
 
-        // Lompat sesekali saat mengejar (tidak dibatasi jarak ke player).
-        if (st == BotState.Chase && playerTarget != null && jumpController != null && physics.IsGrounded)
+        // Lompat sesekali saat mengejar, dan lebih sering saat CHARGE (mendekat player sambil lompat).
+        if ((curState == BotState.Chase || curState == BotState.Charge) && playerTarget != null && jumpController != null && physics.IsGrounded)
         {
             chaseJumpTimer -= dt;
             if (chaseJumpTimer <= 0f)
             {
                 jumpController.TryChaseJump();
-                chaseJumpTimer = Random.Range(3f, 6f);
+                // Lompat lebih sering saat charge agar lebih sulit ditangkap/ditembak.
+                chaseJumpTimer = curState == BotState.Charge ? 1.5f : Random.Range(3f, 6f);
             }
         }
 
-        // Track dash rising edge
+        // Crouch secara acak saat charge (membuat bot lebih sulit ditembak).
+        UpdateCrouch(dt);
+
+        // Track dash rising edge.
         TrackDashRisingEdge();
 
-        // Aktifkan BotRangedCombat (raycast + aim lock) hanya saat tidak Flee.
-        // Saat Flee: bot hanya lari, tidak menembak.
+        // BotRangedCombat aktif saat chase/attack/strafe/CHARGE (menembak sambil mendekat player).
+        // Chase juga menyala agar bot tetap menembak sambil mengejar player.
         if (rangedCombat != null)
-            rangedCombat.enabled = st != BotState.Flee;
+            rangedCombat.enabled = curState == BotState.Chase || curState == BotState.Attack ||
+                                   curState == BotState.Strafe || curState == BotState.Charge;
 
-        // Combat + sprite shooting feedback.
+        // Feedback animasi tembakan pada sprite.
         bool isShooting = false;
-        if (st == BotState.Attack && combat != null && playerTarget != null)
+        if ((curState == BotState.Attack || curState == BotState.Strafe ||
+             curState == BotState.Charge || curState == BotState.Chase) && playerTarget != null)
         {
-            isShooting = combat.TryAttack(playerTarget);
-        }
-        else if (st == BotState.Strafe && playerTarget != null)
-        {
-            // BotRangedCombat menembak secara independen saat Strafe.
-            // Saat Flee, rangedCombat.enabled sudah di-set false di atas, jadi tidak akan tembak nyata.
-            isShooting = true;
+            isShooting = true; // BotRangedCombat menembak secara independen (termasuk saat chase)
         }
 
         if (spriteController != null)
+        {
             spriteController.SetShootingState(isShooting);
+            spriteController.SetCrouchState(isCrouching); // sinkronkan animasi jongkok ke sprite
+        }
+    }
 
-        // Recover handling: if recover state and timer done, state machine handles next eval
+    private void TrackPlayerVelocity(float dt)
+    {
+        if (playerTarget == null) return;
+
+        var pp = playerTarget.GetComponent<PlayerPhysics>();
+        if (pp != null)
+        {
+            playerVelocity = pp.HorizontalVelocity;
+            lastPlayerPosition = playerTarget.position;
+            return;
+        }
+
+        // Fallback estimasi kecepatan dari selisih posisi.
+        Vector3 cur = playerTarget.position;
+        playerVelocity = (cur - lastPlayerPosition) / Mathf.Max(dt, 0.0001f);
+        lastPlayerPosition = cur;
     }
 
     private bool prevDashing;
+
     private void TrackDashRisingEdge()
     {
         var pd = GetComponent<PlayerDash>();
@@ -284,15 +338,13 @@ public class BotController : MonoBehaviour
 
     private void UpdateMovementDestination()
     {
-        if (movement == null) return;
-        if (stateMachine == null) return;
+        if (movement == null || stateMachine == null) return;
 
         BotState st = stateMachine.CurrentState;
         switch (st)
         {
             case BotState.Idle:
                 movement.Stop();
-                // small wander occasionally
                 HandleWander();
                 break;
             case BotState.Patrol:
@@ -303,42 +355,11 @@ public class BotController : MonoBehaviour
                     movement.SetDestination(perception.TargetPosition);
                 break;
             case BotState.Chase:
-                if (playerTarget != null && reactionTimer <= 0f)
-                {
+                // Langsung mendekati pemain. BotRangedCombat akan menembak jika sudah dalam attackRange.
+                if (playerTarget != null)
                     movement.SetDestination(playerTarget.position);
-                }
-                else if (playerTarget != null)
-                {
-                    movement.SetDestination(lastPlayerPosition);
-                }
-                if (playerTarget != null) lastPlayerPosition = playerTarget.position;
                 break;
             case BotState.Attack:
-                if (playerTarget != null)
-                {
-                    float dist = Vector3.Distance(transform.position, playerTarget.position);
-                    if (dist > settings.AttackRange)
-                    {
-                        // Masih terlalu jauh, mendekati player.
-                        movement.SetDestination(playerTarget.position);
-                    }
-                    else
-                    {
-                        // Sudah dalam jarak serang: berhenti, hadap player, dan akan ditembak di bawah.
-                        movement.Stop();
-                        Vector3 toPlayer = playerTarget.position - transform.position;
-                        toPlayer.y = 0f;
-                        if (toPlayer.sqrMagnitude > 0.0001f)
-                        {
-                            transform.rotation = Quaternion.RotateTowards(
-                                transform.rotation,
-                                Quaternion.LookRotation(toPlayer, Vector3.up),
-                                settings.RotationSpeed * Time.deltaTime
-                            );
-                        }
-                    }
-                }
-                break;
             case BotState.Strafe:
                 HandleStrafe();
                 break;
@@ -348,8 +369,8 @@ public class BotController : MonoBehaviour
                 else
                     movement.Stop();
                 break;
-            case BotState.Flee:
-                HandleFlee();
+            case BotState.Charge:
+                HandleCharge();
                 break;
             case BotState.Recover:
                 movement.Stop();
@@ -363,7 +384,6 @@ public class BotController : MonoBehaviour
         {
             if (patrolPoints[patrolIndex] != null)
                 movement.SetDestination(patrolPoints[patrolIndex].position);
-            // advance when close
             if (movement != null && Vector3.Distance(transform.position, patrolPoints[patrolIndex].position) < 1f)
             {
                 patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
@@ -391,12 +411,14 @@ public class BotController : MonoBehaviour
     {
         float r = settings.WanderRadius;
         Vector2 rnd = Random.insideUnitCircle * r;
-        Vector3 basePos = transform.position;
-        // wander around start? use current position
-        wanderTarget = basePos + new Vector3(rnd.x, 0f, rnd.y);
+        wanderTarget = transform.position + new Vector3(rnd.x, 0f, rnd.y);
         hasWanderTarget = true;
     }
 
+    /// <summary>
+    /// Strafing pintar: lingkari pemain pada EngageRange, arah berubah secara acak,
+    /// mundur jika terlalu dekat / mendekat jika terlalu jauh, dan kadang dash melingkar.
+    /// </summary>
     private void HandleStrafe()
     {
         if (playerTarget == null || movement == null) return;
@@ -404,8 +426,8 @@ public class BotController : MonoBehaviour
         strafeTimer -= Time.deltaTime;
         if (strafeTimer <= 0f)
         {
-            strafeDirection = -strafeDirection;
-            strafeTimer = settings != null ? settings.StrafeChangeInterval : 2f;
+            strafeDirection = Random.value > 0.5f ? 1 : -1;
+            strafeTimer = Random.Range(settings.StrafeMinInterval, settings.StrafeMaxInterval);
         }
 
         Vector3 toPlayer = playerTarget.position - transform.position;
@@ -413,16 +435,16 @@ public class BotController : MonoBehaviour
         float dist = toPlayer.magnitude;
         Vector3 toPlayerDir = dist > 0.0001f ? toPlayer / dist : Vector3.forward;
 
-        // Strafe direction: perpendicular to player (left/right).
+        // Arah strafing: tegak lurus terhadap pemain (kiri/kanan).
         Vector3 strafeDir = Vector3.Cross(Vector3.up, toPlayerDir) * strafeDirection;
 
-        // Keep distance near engageRange: move away if too close, move closer if too far.
-        float engageRange = settings != null ? settings.EngageRange : 10f;
+        // Pertahankan jarak dekat EngageRange.
+        float engageRange = settings.EngageRange;
         Vector3 adjust = Vector3.zero;
-        if (dist < engageRange * 0.6f)
-            adjust -= toPlayerDir; // too close, back off
+        if (dist < engageRange * 0.5f)
+            adjust -= toPlayerDir; // terlalu dekat, mundur
         else if (dist > engageRange)
-            adjust += toPlayerDir; // too far, close in slightly
+            adjust += toPlayerDir; // terlalu jauh, mendekat sedikit
 
         Vector3 finalDir = (strafeDir + adjust);
         if (finalDir.sqrMagnitude < 0.0001f)
@@ -430,26 +452,110 @@ public class BotController : MonoBehaviour
         else
             finalDir.Normalize();
 
+        // Tujuan di depan sejumlah jarak agar CharacterController memiliki tujuan gerak.
         movement.SetDestination(transform.position + finalDir * 8f);
     }
 
-    private void HandleFlee()
+    /// <summary>
+    /// Charge: berlari MENUJU player (menyerang balik) saat baru terkena damage.
+    /// Bot lebih lincah: mencoba mendekat cepat, kadang jongkok agar sulit ditembak,
+    /// dan terus menghadap player (BotRangedCombat aim-lock + tembak).
+    /// </summary>
+    private void HandleCharge()
     {
         if (playerTarget == null || movement == null) return;
 
-        fleeTimer -= Time.deltaTime;
-        if (fleeTimer <= 0f)
+        chargeTimer -= Time.deltaTime;
+        if (chargeTimer <= 0f)
         {
-            isFleeing = false;
+            isCharging = false;
             return;
         }
 
-        // Run directly away from player.
-        Vector3 away = transform.position - playerTarget.position;
-        away.y = 0f;
-        if (away.sqrMagnitude < 0.0001f) away = -transform.forward;
+        // Gerak lurus menuju pemain (menerjang), tanpa zig-zag menjauh.
+        Vector3 toPlayer = playerTarget.position - transform.position;
+        toPlayer.y = 0f;
+        if (toPlayer.sqrMagnitude < 0.0001f) toPlayer = transform.forward;
+        toPlayer.Normalize();
 
-        movement.SetDestination(transform.position + away.normalized * 10f);
+        // Tujuan sedikit di depan pemain agar CharacterController punya arah gerak.
+        movement.SetDestination(transform.position + toPlayer * 10f);
+    }
+
+    /// <summary>
+    /// Atur status jongkok secara acak saat charge (sulit ditembak).
+    /// Terhubung ke PlayerCrouch (collider mengecil) dan PlayerSpriteController (animasi).
+    /// </summary>
+    private void UpdateCrouch(float dt)
+    {
+        if (settings == null || crouch == null || spriteController == null) return;
+
+        // Cooldown antar jongkok.
+        if (crouchCooldownTimer > 0f)
+            crouchCooldownTimer -= dt;
+
+        if (isCharging && crouchCooldownTimer <= 0f && Random.value < settings.CrouchChance * dt)
+        {
+            // Mulai jongkok.
+            isCrouching = true;
+            crouchTimer = settings.CrouchDuration;
+            crouchCooldownTimer = settings.CrouchCooldown;
+            crouch.SetCrouching(true);
+        }
+        else if (isCrouching)
+        {
+            crouchTimer -= dt;
+            if (crouchTimer <= 0f)
+            {
+                isCrouching = false;
+                crouch.SetCrouching(false);
+            }
+        }
+
+        // Pastikan sprite controller selalu sinkron.
+        spriteController.SetCrouchState(isCrouching);
+    }
+
+    /// <summary>
+    /// Dash kompatibel saat bertempur: kadang meluncur ke samping untuk mengelak peluru pemain.
+    /// </summary>
+    private void HandleCombatDash(Vector3 toPlayer, float dist)
+    {
+        if (dashController == null || physics == null || !physics.IsGrounded) return;
+        if (GetComponent<PlayerDash>().IsDashing) return;
+
+        Vector3 dir = toPlayer;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.0001f) dir = transform.forward;
+        else dir.Normalize();
+
+        Vector3 sideways = Vector3.Cross(Vector3.up, dir) * strafeDirection;
+
+        // Terlalu dekat: kadang dash mundur untuk menciptakan ruang.
+        if (dist < settings.CloseRangeThreshold && Random.value < 0.03f)
+        {
+            dashController.TryDash(-dir, true, forceDash: true);
+        }
+        // Sesekali dash ke samping saat bertempur agar sulit dikejar.
+        else if (dist < 8f && Random.value < 0.04f)
+        {
+            dashController.TryDash(sideways, true, forceDash: true);
+        }
+    }
+
+    /// <summary>
+    /// Dash charge paksa MENUJU pemain (forceDash bypass timer dekat-jauh).
+    /// Membuat bot tiba-tiba mendekat dan sulit dielak.
+    /// </summary>
+    private void HandleChargeDash(Vector3 toPlayer)
+    {
+        if (dashController == null || physics == null || !physics.IsGrounded) return;
+        if (GetComponent<PlayerDash>().IsDashing) return;
+
+        Vector3 dir = toPlayer;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.0001f) dir = transform.forward;
+        dashController.TryDash(dir.normalized, true, forceDash: true);
     }
 
     private float GetCurrentSpeed()
@@ -462,8 +568,8 @@ public class BotController : MonoBehaviour
                 return settings.ChaseSpeed;
             case BotState.Strafe:
                 return settings.StrafeSpeed;
-            case BotState.Flee:
-                return settings.FleeSpeed;
+            case BotState.Charge:
+                return settings.ChargeSpeed;
             case BotState.Patrol:
                 return settings.PatrolSpeed;
             case BotState.Investigate:
@@ -481,20 +587,10 @@ public class BotController : MonoBehaviour
         if (stateMachine == null) return true;
         switch (stateMachine.CurrentState)
         {
-            case BotState.Idle:
-                return true;
             case BotState.Recover:
                 return false;
-            case BotState.Flee:
-                return true;
             default:
                 return true;
         }
-    }
-
-    private float RandomReactionDelay()
-    {
-        if (settings == null) return 0.1f;
-        return Random.Range(settings.ReactionTimeMin, settings.ReactionTimeMax);
     }
 }
