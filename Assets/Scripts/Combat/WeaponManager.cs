@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class WeaponManager : MonoBehaviour
@@ -10,10 +12,16 @@ public class WeaponManager : MonoBehaviour
     [SerializeField] private WeaponData startingWeapon;
     [SerializeField] private List<WeaponData> startingOwnedWeapons = new List<WeaponData>();
 
+    [Header("Catalog (digunakan untuk rekonstruksi penyimpanan)")]
+    [SerializeField] private WeaponData[] allWeapons = new WeaponData[0];
+
     private readonly List<WeaponData> ownedWeapons = new List<WeaponData>();
 
     public WeaponData EquippedWeapon { get; private set; }
     public IReadOnlyList<WeaponData> OwnedWeapons => ownedWeapons;
+
+    /// <summary>Dipanggil setiap kali daftar kepemilihan atau senjata aktif berubah.</summary>
+    public event Action OnOwnershipChanged;
 
     private void Awake()
     {
@@ -28,14 +36,44 @@ public class WeaponManager : MonoBehaviour
         if (weaponController == null)
             weaponController = GetComponent<ArcadeWeaponController>();
 
-        foreach (WeaponData weapon in startingOwnedWeapons)
-            AddOwnedWeapon(weapon);
+        // Muat data penyimpanan sebelum daftar kepemilikan dipakai UI.
+        SaveSystem.Load();
 
-        if (startingWeapon != null)
+        bool hasSavedOwned = SaveSystem.currentData.ownedWeaponNames != null
+                             && SaveSystem.currentData.ownedWeaponNames.Count > 0;
+
+        if (hasSavedOwned)
         {
-            AddOwnedWeapon(startingWeapon);
-            Equip(startingWeapon);
+            // Data tersimpan lebih diprioritaskan daripada nilai awal scene.
+            ownedWeapons.Clear();
+            foreach (string name in SaveSystem.currentData.ownedWeaponNames)
+            {
+                WeaponData weapon = FindWeaponByName(name);
+                if (weapon != null)
+                    AddOwnedWeapon(weapon);
+            }
+
+            if (!string.IsNullOrEmpty(SaveSystem.currentData.equippedWeaponName))
+            {
+                WeaponData equipped = FindWeaponByName(SaveSystem.currentData.equippedWeaponName);
+                if (equipped != null && IsOwned(equipped))
+                    Equip(equipped);
+            }
         }
+        else
+        {
+            foreach (WeaponData weapon in startingOwnedWeapons)
+                AddOwnedWeapon(weapon);
+
+            if (startingWeapon != null)
+            {
+                AddOwnedWeapon(startingWeapon);
+                Equip(startingWeapon);
+            }
+        }
+
+        // Pastikan berkas penyimpanan tercreate meski pemain belum melakukan transaksi.
+        SyncAndSaveOwnership();
     }
 
     public bool IsOwned(WeaponData weapon)
@@ -84,6 +122,7 @@ public class WeaponManager : MonoBehaviour
             // Refund jika controller tidak tersedia,agar uang pemain tidak hilang.
             PlayerWallet.Instance.AddCredits(weapon.Price);
             ownedWeapons.Remove(weapon);
+            SyncAndSaveOwnership();
             message = "Weapon controller tidak ditemukan - pastikan ArcadeWeaponController ada di scene.";
             return false;
         }
@@ -115,6 +154,7 @@ public class WeaponManager : MonoBehaviour
 
         EquippedWeapon = weapon;
         weaponController.ApplyWeaponData(weapon);
+        SyncAndSaveOwnership();
         Debug.Log($"WeaponManager: {weapon.WeaponName} berhasil di-equip.");
         return true;
     }
@@ -122,7 +162,41 @@ public class WeaponManager : MonoBehaviour
     private void AddOwnedWeapon(WeaponData weapon)
     {
         if (weapon != null && !ownedWeapons.Contains(weapon))
+        {
             ownedWeapons.Add(weapon);
+            OnOwnershipChanged?.Invoke();
+            SyncAndSaveOwnership();
+        }
+    }
+
+    private WeaponData FindWeaponByName(string name)
+    {
+        if (allWeapons != null)
+        {
+            foreach (WeaponData weapon in allWeapons)
+            {
+                if (weapon != null && weapon.WeaponName == name)
+                    return weapon;
+            }
+        }
+
+        foreach (WeaponData weapon in ownedWeapons)
+        {
+            if (weapon != null && weapon.WeaponName == name)
+                return weapon;
+        }
+
+        return null;
+    }
+
+    private void SyncAndSaveOwnership()
+    {
+        SaveSystem.currentData.ownedWeaponNames = ownedWeapons
+            .Where(w => w != null)
+            .Select(w => w.WeaponName)
+            .ToList();
+        SaveSystem.currentData.equippedWeaponName = EquippedWeapon != null ? EquippedWeapon.WeaponName : string.Empty;
+        SaveSystem.Save();
     }
 
     private void OnDestroy()

@@ -20,7 +20,14 @@ public class PlayerWallet : MonoBehaviour
         }
 
         Instance = this;
-        Credits = startingCredits;
+
+        // Muat data sebelum UI menampilkan saldo. Jangan mengandalkan perubahan
+        // ScriptableObject runtime sebagai penyimpanan permanen.
+        SaveSystem.Load();
+        Credits = SaveSystem.currentData.credits;
+        if (Credits < 0)
+            Credits = startingCredits;
+
         OnCreditsChanged?.Invoke(Credits);
     }
 
@@ -36,6 +43,8 @@ public class PlayerWallet : MonoBehaviour
 
         Credits -= amount;
         OnCreditsChanged?.Invoke(Credits);
+        SaveSystem.currentData.credits = Credits;
+        SaveSystem.Save();
         return true;
     }
 
@@ -46,6 +55,8 @@ public class PlayerWallet : MonoBehaviour
 
         Credits += amount;
         OnCreditsChanged?.Invoke(Credits);
+        SaveSystem.currentData.credits = Credits;
+        SaveSystem.Save();
     }
 
     private void OnDestroy()

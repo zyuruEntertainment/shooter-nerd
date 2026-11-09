@@ -18,8 +18,9 @@ public class WeaponShopItemUI : MonoBehaviour
     {
         cardButton = GetComponent<Button>();
 
-        if (cardButton == null)
-            Debug.LogError("Button tidak ditemukan pada root WeaponShopItemUI!", this);
+        // cardButton opsional: WeaponShopItemUI juga dipakai sebagai panel informasi
+        // yang tombol belinya diatur oleh WeaponShopController terpisah, jadi tidak
+        // mencatat error jika tombol tidak ada di objek ini.
     }
 
     public void Setup(
