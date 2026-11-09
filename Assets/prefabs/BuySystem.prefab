@@ -871,6 +871,7 @@ GameObject:
   - component: {fileID: 2139126834037201825}
   - component: {fileID: 868242379652492450}
   - component: {fileID: 8812410872164348420}
+  - component: {fileID: 8830624600329999446}
   m_Layer: 5
   m_Name: winchester-1894
   m_TagString: Untagged
@@ -936,6 +937,23 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &8830624600329999446
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3846972422706905649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
+  weaponData: {fileID: 11400000, guid: bfd45ca878c0cdc4d9361da3c1ab39a3, type: 2}
+  cardPanel: {fileID: 8812410872164348420}
+  cardButton: {fileID: 4320639582686238454}
+  normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  selectedColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &3945425551897554096
 GameObject:
   m_ObjectHideFlags: 0
@@ -1174,6 +1192,7 @@ GameObject:
   - component: {fileID: 9211887541546197613}
   - component: {fileID: 3738740952087592356}
   - component: {fileID: 1361439193292288960}
+  - component: {fileID: 7133402623911431074}
   m_Layer: 5
   m_Name: AK-47
   m_TagString: Untagged
@@ -1239,6 +1258,23 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7133402623911431074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4736741189710793087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
+  weaponData: {fileID: 11400000, guid: 8acfe01801d01364999922a3801b1268, type: 2}
+  cardPanel: {fileID: 1361439193292288960}
+  cardButton: {fileID: 488751010001145572}
+  normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  selectedColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &4796641684892899515
 GameObject:
   m_ObjectHideFlags: 0
@@ -2308,7 +2344,6 @@ MonoBehaviour:
   statsText: {fileID: 3461821773728391795}
   actionText: {fileID: 1330956076713970624}
   weaponIcon: {fileID: 3731483861740446753}
-  actionButton: {fileID: 2022294184972902410}
 --- !u!1 &7329631878685702584
 GameObject:
   m_ObjectHideFlags: 0
@@ -2320,6 +2355,7 @@ GameObject:
   - component: {fileID: 7773661535174679976}
   - component: {fileID: 7891330226430700150}
   - component: {fileID: 3781484271807369}
+  - component: {fileID: 752065389346712040}
   m_Layer: 5
   m_Name: Ammo
   m_TagString: Untagged
@@ -2385,6 +2421,23 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &752065389346712040
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7329631878685702584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
+  weaponData: {fileID: 0}
+  cardPanel: {fileID: 0}
+  cardButton: {fileID: 0}
+  normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  selectedColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &7367288099751324174
 GameObject:
   m_ObjectHideFlags: 0
