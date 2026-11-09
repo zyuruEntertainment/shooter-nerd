@@ -81,10 +81,10 @@ public class WeaponManager : MonoBehaviour
 
         if (!Equip(weapon))
         {
-            // Refund jika controller tidak tersedia, agar uang pemain tidak hilang.
+            // Refund jika controller tidak tersedia,agar uang pemain tidak hilang.
             PlayerWallet.Instance.AddCredits(weapon.Price);
             ownedWeapons.Remove(weapon);
-            message = "Weapon controller tidak ditemukan.";
+            message = "Weapon controller tidak ditemukan - pastikan ArcadeWeaponController ada di scene.";
             return false;
         }
 
@@ -94,11 +94,28 @@ public class WeaponManager : MonoBehaviour
 
     public bool Equip(WeaponData weapon)
     {
-        if (!IsOwned(weapon) || weaponController == null)
+        if (!IsOwned(weapon))
             return false;
+
+        // Coba dapatkan komponen jika belum diassign
+        if (weaponController == null)
+            weaponController = GetComponent<ArcadeWeaponController>();
+
+        if (weaponController == null)
+        {
+            Debug.LogError($"WeaponManager: ArcadeWeaponController tidak ditemukan di {gameObject.name}. Tidali dapat equip weapon {weapon?.WeaponName}.");
+            return false;
+        }
+
+        // Reset fire timer when switching weapons to avoid immediate fire on equip
+        if (weaponController is ArcadeWeaponController awc)
+        {
+            awc.ResetFireTimer();
+        }
 
         EquippedWeapon = weapon;
         weaponController.ApplyWeaponData(weapon);
+        Debug.Log($"WeaponManager: {weapon.WeaponName} berhasil di-equip.");
         return true;
     }
 

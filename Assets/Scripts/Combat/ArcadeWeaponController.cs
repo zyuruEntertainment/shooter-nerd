@@ -40,6 +40,14 @@ public class ArcadeWeaponController : MonoBehaviour
     public int CurrentAmmo => currentAmmo;
     public int ReserveAmmo => reserveAmmo;
 
+    /// <summary>
+    /// Reset the fire cooldown timer. Useful when switching weapons.
+    /// </summary>
+    public void ResetFireTimer()
+    {
+        nextFireTime = 0f;
+    }
+
     private void Awake()
     {
         currentAmmo = Mathf.Clamp(startingMagazineAmmo, 0, magazineSize);
