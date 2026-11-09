@@ -1,6 +1,5 @@
 ﻿using System;
 using UnityEngine;
-using static Readme;
 
 [DisallowMultipleComponent]
 public class CombatStats : MonoBehaviour

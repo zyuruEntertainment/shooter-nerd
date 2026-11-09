@@ -128,18 +128,22 @@ public class ArcadeWeaponController : MonoBehaviour
         if (!TryGetTarget(out RaycastHit hit))
             return;
 
+        CombatHealth ownHealth = GetComponent<CombatHealth>();
+
         HitZone zone = hit.collider.GetComponentInParent<HitZone>();
+
         if (zone != null)
         {
-            zone.ApplyDamage(damage);
+            zone.ApplyDamage(damage, ownHealth);
             return;
         }
 
         CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
-        CombatHealth ownHealth = GetComponent<CombatHealth>();
 
         if (health != null && health != ownHealth)
-            health.TakeDamage(damage);
+        {
+            health.TakeDamage(damage, ownHealth);
+        }
     }
 
     private void UpdateCrosshair()

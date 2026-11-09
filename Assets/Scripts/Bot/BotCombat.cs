@@ -67,12 +67,26 @@ public class BotCombat : MonoBehaviour
 
         // Apply damage if target supports IDamageable.
         IDamageable damageable =
-            target.GetComponentInParent<IDamageable>();
+    target.GetComponentInParent<IDamageable>();
 
-        float actualDamage = settings != null ? settings.AttackDamage : attackDamage;
+        CombatHealth targetHealth =
+            target.GetComponentInParent<CombatHealth>();
 
-        if (damageable != null)
+        CombatHealth ownHealth =
+            GetComponent<CombatHealth>();
+
+        float actualDamage = settings != null
+            ? settings.AttackDamage
+            : attackDamage;
+
+        if (targetHealth != null)
+        {
+            targetHealth.TakeDamage(actualDamage, ownHealth);
+        }
+        else if (damageable != null)
+        {
             damageable.TakeDamage(actualDamage);
+        }
 
         return true;
     }

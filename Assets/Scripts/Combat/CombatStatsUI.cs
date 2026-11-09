@@ -27,9 +27,9 @@ public class CombatStatsUI : MonoBehaviour
             return;
 
         if (killsText != null)
-            killsText.text = $"KILLS: {targetStats.Kills}";
+            killsText.text = $"{targetStats.Kills}";
 
         if (deathsText != null)
-            deathsText.text = $"DEATHS: {targetStats.Deaths}";
+            deathsText.text = $"{targetStats.Deaths}";
     }
 }
