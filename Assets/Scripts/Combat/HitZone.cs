@@ -32,11 +32,24 @@ public class HitZone : MonoBehaviour
         }
     }
 
+    // Kompatibilitas dengan pemanggilan damage lama.
     public void ApplyDamage(float baseDamage)
+    {
+        ApplyDamage(baseDamage, null);
+    }
+
+    // Damage dengan identitas attacker.
+    public void ApplyDamage(
+        float baseDamage,
+        CombatHealth attacker
+    )
     {
         if (owner == null || owner.IsDead)
             return;
 
-        owner.TakeDamage(baseDamage * damageMultiplier);
+        float finalDamage =
+            baseDamage * damageMultiplier;
+
+        owner.TakeDamage(finalDamage, attacker);
     }
 }

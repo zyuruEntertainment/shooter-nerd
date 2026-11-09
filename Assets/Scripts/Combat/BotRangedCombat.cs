@@ -7,39 +7,48 @@ public class BotRangedCombat : MonoBehaviour
     [SerializeField] private BotSettings settings;
     [SerializeField] private BotVision vision;
     [SerializeField] private Transform playerTarget;
-    [SerializeField] private Transform shootOrigin; // kosongkan untuk menggunakan transform bot
+    [SerializeField] private Transform shootOrigin;
 
     [Header("Game Balance")]
     [SerializeField, Min(1f)] private float attackRange = 20f;
-    [SerializeField, Min(0f)] private float damage = 20f; // sejajar dengan damage pemain
-    [SerializeField, Min(0.1f)] private float attackInterval = 1.1f; // jeda antar peluru (reload), satu-satunya delay
+    [SerializeField, Min(0f)] private float damage = 20f;
+    [SerializeField, Min(0.1f)] private float attackInterval = 1.1f;
 
     [Header("Aim Lock")]
-    [SerializeField, Min(0f)] private float aimLockDelay = 0f; // 0 = tidak ada jeda sebelum tembak, langsung pukul saat terlihat dan dalam range
-    [SerializeField, Min(0f)] private float aimRotationSpeed = 540f; // kecepatan ikut aim; rendah = agak telat ikut player, tinggi = lebih responsif
+    [SerializeField, Min(0f)] private float aimLockDelay = 0f;
+    [SerializeField, Min(0f)] private float aimRotationSpeed = 540f;
 
     [Header("Target Leading")]
-    [Tooltip("Seconds to lead the target (predict player movement). 0 = aim at current position (presisi maksimum).")]
-    [SerializeField, Min(0f)] private float leadTime = 0f; // 0 = tembak ke posisi sekarang, presisi tajam tanpa prediksi
+    [Tooltip("Seconds to lead the target. 0 = aim at current position.")]
+    [SerializeField, Min(0f)] private float leadTime = 0f;
 
     [Header("Debug Raycast")]
     [SerializeField] private bool showDebugRaycast = true;
     [SerializeField, Min(0f)] private float debugRaycastDuration = 0.05f;
 
     private CombatHealth playerHealth;
+    private CombatHealth ownHealth;
+
     private PlayerPhysics playerPhysics;
+
     private float nextAttackTime;
     private float aimTimer;
     private bool isAiming;
 
     private void Awake()
     {
+        if (settings == null)
+            settings = GetComponent<BotSettings>();
+
         if (vision == null)
             vision = GetComponent<BotVision>();
 
+        ownHealth = GetComponent<CombatHealth>();
+
         if (playerTarget == null)
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            GameObject player =
+                GameObject.FindGameObjectWithTag("Player");
 
             if (player != null)
                 playerTarget = player.transform;
@@ -47,8 +56,11 @@ public class BotRangedCombat : MonoBehaviour
 
         if (playerTarget != null)
         {
-            playerHealth = playerTarget.GetComponent<CombatHealth>();
-            playerPhysics = playerTarget.GetComponent<PlayerPhysics>();
+            playerHealth =
+                playerTarget.GetComponent<CombatHealth>();
+
+            playerPhysics =
+                playerTarget.GetComponent<PlayerPhysics>();
         }
 
         if (shootOrigin == null)
@@ -63,7 +75,8 @@ public class BotRangedCombat : MonoBehaviour
             shootOrigin == null)
             return;
 
-        if (playerHealth.IsDead)
+        if (playerHealth.IsDead ||
+            (ownHealth != null && ownHealth.IsDead))
         {
             ResetAim();
             return;
@@ -75,21 +88,30 @@ public class BotRangedCombat : MonoBehaviour
             return;
         }
 
-        float distance = Vector3.Distance(transform.position, playerTarget.position);
+        float distance = Vector3.Distance(
+            transform.position,
+            playerTarget.position
+        );
+
         if (distance > attackRange)
         {
             ResetAim();
             return;
         }
 
-        // ---- Kunci pandangan / aim ke player (dengan leading/prediksi gerakan) ----
+        // Aim menuju posisi player.
         Vector3 aimPos = GetPredictedTargetPosition();
-        Vector3 toTarget = aimPos - shootOrigin.position;
+
+        Vector3 toTarget =
+            aimPos - shootOrigin.position;
+
         toTarget.y = 0f;
 
         if (toTarget.sqrMagnitude > 0.0001f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(toTarget, Vector3.up);
+            Quaternion targetRot =
+                Quaternion.LookRotation(toTarget, Vector3.up);
+
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation,
                 targetRot,
@@ -97,10 +119,14 @@ public class BotRangedCombat : MonoBehaviour
             );
         }
 
-        // Debug ray saat mengunci arah (kuning selama delay, biru saat siap)
+        // Debug aim ray.
         if (showDebugRaycast)
         {
-            Color aimColor = isAiming && aimTimer < aimLockDelay ? Color.yellow : Color.cyan;
+            Color aimColor =
+                isAiming && aimTimer < aimLockDelay
+                ? Color.yellow
+                : Color.cyan;
+
             Debug.DrawRay(
                 shootOrigin.position,
                 toTarget.normalized * attackRange,
@@ -109,7 +135,7 @@ public class BotRangedCombat : MonoBehaviour
             );
         }
 
-        // Jeda mengunci target sebelum boleh tembak
+        // Aim lock.
         if (!isAiming)
         {
             isAiming = true;
@@ -119,9 +145,9 @@ public class BotRangedCombat : MonoBehaviour
         aimTimer += Time.deltaTime;
 
         if (aimTimer < aimLockDelay)
-            return; // masih mengunci target, belum tembak
+            return;
 
-        // Jeda antar serangan
+        // Attack cooldown.
         if (Time.time < nextAttackTime)
             return;
 
@@ -131,29 +157,37 @@ public class BotRangedCombat : MonoBehaviour
     private void Fire()
     {
         nextAttackTime = Time.time + attackInterval;
+
         ResetAim();
 
-        // Arah tembak menuju prediksi posisi pemain (lead), agar sulit dielak.
         Vector3 aimPos = GetPredictedTargetPosition();
-        Vector3 direction = aimPos - shootOrigin.position;
+
+        Vector3 direction =
+            aimPos - shootOrigin.position;
+
         direction.y = 0f;
+
         if (direction.sqrMagnitude < 0.0001f)
             direction = transform.forward;
 
-        float actualDamage = settings != null ? settings.AttackDamage : damage;
+        float actualDamage =
+            settings != null
+            ? settings.AttackDamage
+            : damage;
 
-        RaycastHit hit;
         bool hitSomething = Physics.Raycast(
             shootOrigin.position,
             direction.normalized,
-            out hit,
+            out RaycastHit hit,
             attackRange
         );
 
-        // ---- Debug ray saat tembak (merah jika mengenai sesuatu, hijau jika meleset) ----
+        // Debug shooting ray.
         if (showDebugRaycast)
         {
-            Color hitColor = hitSomething ? Color.red : Color.green;
+            Color hitColor =
+                hitSomething ? Color.red : Color.green;
+
             Debug.DrawRay(
                 shootOrigin.position,
                 direction.normalized * attackRange,
@@ -162,27 +196,39 @@ public class BotRangedCombat : MonoBehaviour
             );
         }
 
-        if (hitSomething)
-        {
-            // Terapkan damage hanya jika yang mengenai adalah player target
-            CombatHealth health = hit.transform.GetComponentInParent<CombatHealth>();
-            if (health != null && health == playerHealth)
-                health.TakeDamage(actualDamage);
-        }
+        if (!hitSomething)
+            return;
+
+        // Cari health dari collider yang terkena.
+        CombatHealth health =
+            hit.collider.GetComponentInParent<CombatHealth>();
+
+        if (health == null || health != playerHealth)
+            return;
+
+        // Damage membawa identitas bot sebagai attacker.
+        health.TakeDamage(actualDamage, ownHealth);
     }
 
-    // Posisi target yang diprediksi berdasarkan kecepatan pemain saat ini (leading).
     private Vector3 GetPredictedTargetPosition()
     {
-        if (playerTarget == null) return shootOrigin.position;
+        if (playerTarget == null)
+            return shootOrigin.position;
 
         Vector3 pos = playerTarget.position;
-        float lead = settings != null ? settings.LeadTime : leadTime;
+
+        float lead =
+            settings != null
+            ? settings.LeadTime
+            : leadTime;
+
         if (lead > 0f && playerPhysics != null)
         {
             pos += playerPhysics.HorizontalVelocity * lead;
         }
+
         pos.y = shootOrigin.position.y;
+
         return pos;
     }
 

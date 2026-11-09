@@ -8,6 +8,7 @@ public class CombatHealth : MonoBehaviour, IDamageable
     public float CurrentHealth { get; private set; }
     public float MaxHealth => maxHealth;
     public bool IsDead => CurrentHealth <= 0f;
+    private CombatHealth lastAttacker;
 
     public event System.Action<float> OnTakeDamage;
 
@@ -18,10 +19,19 @@ public class CombatHealth : MonoBehaviour, IDamageable
 
     public void TakeDamage(float amount)
     {
+        TakeDamage(amount, null);
+    }
+
+    public void TakeDamage(float amount, CombatHealth attacker)
+    {
         if (IsDead || amount <= 0f)
             return;
 
+        if (attacker != null && attacker != this)
+            lastAttacker = attacker;
+
         CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
+
         OnTakeDamage?.Invoke(amount);
 
         if (IsDead)
@@ -46,14 +56,26 @@ public class CombatHealth : MonoBehaviour, IDamageable
     public void ResetToMaxHealth()
     {
         CurrentHealth = maxHealth;
+        lastAttacker = null;
     }
 
     private void Die()
     {
-        Debug.Log($"{gameObject.name} eliminated. Respawning...", this);
+        // Tambahkan death untuk korban.
+        GetComponent<CombatStats>()?.RegisterDeath();
 
-        // Ganti SetActive(false) dengan respawn sistem.
-        // Objek akan dipindahkan ke titik respawn sesuai tag-nya dan health di-reset.
+        // Tambahkan kill untuk pembunuh terakhir.
+        if (lastAttacker != null && lastAttacker != this)
+        {
+            lastAttacker
+                .GetComponent<CombatStats>()
+                ?.RegisterKill();
+        }
+
+        lastAttacker = null;
+
+        Debug.Log($"{gameObject.name} eliminated.", this);
+
         RespawnManager.Instance?.Respawn(gameObject);
     }
 }
