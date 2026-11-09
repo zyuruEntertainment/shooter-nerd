@@ -15,10 +15,10 @@ MonoBehaviour:
   weaponName: AK-47
   price: 2000
   icon: {fileID: 21300000, guid: cc63dfa317f1f75419eccc9343ce7b67, type: 3}
-  damage: 20
+  damage: 12
   fireInterval: 0.15
   range: 100
-  magazineSize: 6
-  startingReserveAmmo: 114
-  startingMagazineAmmo: 6
+  magazineSize: 36
+  startingReserveAmmo: 156
+  startingMagazineAmmo: 36
   shootingAnimationDuration: 0.2

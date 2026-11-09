@@ -48,8 +48,8 @@ public class WeaponShopController : MonoBehaviour
 
         itemPanel = GetComponent<WeaponShopItemUI>();
 
-        // Tombol beli/equip ada di panel informasi (GameObject "BuyButton" di bawah root).
-        buyButton = transform.Find("BuyButton")?.GetComponent<Button>();
+        // Pastikan ada tombol beli/equip terpisah (tidak bergantung pada kartu item di prefab).
+        EnsureBuyButton();
     }
 
     private void Start()
@@ -88,6 +88,35 @@ public class WeaponShopController : MonoBehaviour
 
         if (Instance == this)
             Instance = null;
+    }
+
+    private void EnsureBuyButton()
+    {
+        if (buyButton != null)
+            return;
+
+        var existing = transform.Find("ShopBuyButton")?.GetComponent<Button>();
+        if (existing != null)
+        {
+            buyButton = existing;
+            return;
+        }
+
+        // Buat tombol beli/equip di root shop agar tidak bentrok dengan kartu item (WeaponCardUI).
+        var go = new GameObject("ShopBuyButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.transform.SetParent(transform, false);
+
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0f);
+        rt.anchorMax = new Vector2(0.5f, 0f);
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = new Vector2(200, 50);
+
+        var img = go.GetComponent<Image>();
+        img.color = new Color(0.3f, 0.3f, 0.3f, 1f);
+
+        buyButton = go.GetComponent<Button>();
+        buyButton.targetGraphic = img;
     }
 
     private void BuildCards()
@@ -145,12 +174,15 @@ public class WeaponShopController : MonoBehaviour
         bool owned = weaponManager.IsOwned(selectedWeapon);
         bool equipped = weaponManager.IsEquipped(selectedWeapon);
 
-        // Panel informasi menampilkan item yang dipilih terakhir. Setup juga memasang
-        // tombol beli/equip pada panel (tidak menimpa saldo/kepemilikan di UI).
+        // Panel informasi menampilkan item yang dipilih terakhir: nama, ikon, harga, status kepemilikan, dll.
         itemPanel.Setup(selectedWeapon, owned, equipped, OnBuyClicked);
+
+        // Tombol beli/equip tidak dapat diklik jika item sudah dipakai (status EQUIPPED).
+        if (buyButton != null)
+            buyButton.interactable = !equipped;
     }
 
-    private void OnBuyClicked()
+    public void OnBuyClicked()
     {
         if (selectedWeapon == null || weaponManager == null)
             return;
