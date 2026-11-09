@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class GameplayUIManager : MonoBehaviour
 {
@@ -8,6 +9,7 @@ public class GameplayUIManager : MonoBehaviour
 
     [Header("Gameplay UI")]
     [SerializeField] private List<GameObject> gameplayUI = new List<GameObject>();
+    [SerializeField] private GameObject BackButton;
 
     [Header("Shop Prefab")]
     [SerializeField] private GameObject shopPrefab;
@@ -21,9 +23,12 @@ public class GameplayUIManager : MonoBehaviour
     private float previousTimeScale = 1f;
     private CursorLockMode previousCursorLockState;
     private bool previousCursorVisible;
+    private Canvas backButtonCanvas;
 
     private void Awake()
     {
+        SetBackButton(false);
+
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -59,6 +64,7 @@ public class GameplayUIManager : MonoBehaviour
 
         shopIsOpen = true;
         SetGameplayUI(false);
+        SetBackButton(true);
 
         // simpan kondisi kursor sebelumnya
         previousCursorLockState = Cursor.lockState;
@@ -90,6 +96,7 @@ public class GameplayUIManager : MonoBehaviour
 
         shopIsOpen = false;
         SetGameplayUI(true);
+        SetBackButton(false);
 
         // kembalikan kondisi kursor gameplay
         Cursor.lockState = previousCursorLockState;
@@ -108,6 +115,26 @@ public class GameplayUIManager : MonoBehaviour
         }
     }
 
+    private void SetBackButton(bool state)
+    {
+        if (BackButton == null)
+            return;
+
+        // ambil atau buat canvas khusus
+        backButtonCanvas = BackButton.GetComponent<Canvas>();
+
+        if (backButtonCanvas == null)
+            backButtonCanvas = BackButton.AddComponent<Canvas>();
+
+        // prioritaskan canvas
+        backButtonCanvas.overrideSorting = true;
+        backButtonCanvas.sortingOrder = 1000;
+
+        // pastikan paling depan dalam parent
+        BackButton.transform.SetAsLastSibling();
+
+        BackButton.SetActive(state);
+    }
     private void OnDestroy()
     {
         if (Instance == this)
