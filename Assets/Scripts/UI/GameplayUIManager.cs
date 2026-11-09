@@ -19,6 +19,19 @@ public class GameplayUIManager : MonoBehaviour
 
     private float previousTimeScale = 1f;
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            OpenShop();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            CloseShop();
+        }
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
