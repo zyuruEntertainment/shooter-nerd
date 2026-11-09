@@ -1,12 +1,12 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class ArcadeWeaponController : MonoBehaviour
 {
-    [Header("Weapon")]
+    [Header("Weapon Defaults (used before WeaponData is applied)")]
     [SerializeField] private string weaponName = "AK-47";
     [SerializeField, Min(1)] private int magazineSize = 6;
     [SerializeField, Min(0)] private int startingReserveAmmo = 114;
@@ -36,6 +36,10 @@ public class ArcadeWeaponController : MonoBehaviour
     private readonly Color normalCrosshairColor = Color.black;
     private readonly Color targetCrosshairColor = Color.red;
 
+    public string WeaponName => weaponName;
+    public int CurrentAmmo => currentAmmo;
+    public int ReserveAmmo => reserveAmmo;
+
     private void Awake()
     {
         currentAmmo = Mathf.Clamp(startingMagazineAmmo, 0, magazineSize);
@@ -55,26 +59,39 @@ public class ArcadeWeaponController : MonoBehaviour
         UpdateAmmoUI();
     }
 
+    public void ApplyWeaponData(WeaponData data)
+    {
+        if (data == null)
+            return;
+
+        weaponName = data.WeaponName;
+        magazineSize = data.MagazineSize;
+        damage = data.Damage;
+        fireInterval = data.FireInterval;
+        range = data.Range;
+        shootingAnimationDuration = data.ShootingAnimationDuration;
+
+        currentAmmo = Mathf.Clamp(data.StartingMagazineAmmo, 0, magazineSize);
+        reserveAmmo = data.StartingReserveAmmo;
+        nextFireTime = 0f;
+
+        UpdateAmmoUI();
+    }
+
     private void Update()
     {
         KeepCrosshairCentered();
         UpdateCrosshair();
 
-        bool mouseHeld =
-            Mouse.current != null &&
-            Mouse.current.leftButton.isPressed;
+        bool mouseHeld = Mouse.current != null && Mouse.current.leftButton.isPressed;
 
         if (mouseHeld || mobileFireHeld)
             Fire();
 
         if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
-        {
             Reload();
-        }
     }
 
-    // Fire joystick hanya mengontrol status menembak.
-    // Arah bidik selalu mengikuti pusat kamera / crosshair.
     public void SetFireHeld(bool value)
     {
         mobileFireHeld = value;
@@ -113,7 +130,7 @@ public class ArcadeWeaponController : MonoBehaviour
             ? SensitivitySettings.Instance.FireSensitivity
             : 1f;
 
-        float interval = fireInterval / fireSensitivity;
+        float interval = fireInterval / Mathf.Max(0.01f, fireSensitivity);
 
         if (Time.time < nextFireTime)
             return;
@@ -124,12 +141,10 @@ public class ArcadeWeaponController : MonoBehaviour
         UpdateAmmoUI();
         PlayShootingAnimation();
 
-        // Damage memakai ray yang sama dengan pemeriksaan crosshair.
         if (!TryGetTarget(out RaycastHit hit))
             return;
 
         CombatHealth ownHealth = GetComponent<CombatHealth>();
-
         HitZone zone = hit.collider.GetComponentInParent<HitZone>();
 
         if (zone != null)
@@ -141,9 +156,7 @@ public class ArcadeWeaponController : MonoBehaviour
         CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
 
         if (health != null && health != ownHealth)
-        {
             health.TakeDamage(damage, ownHealth);
-        }
     }
 
     private void UpdateCrosshair()
@@ -158,14 +171,11 @@ public class ArcadeWeaponController : MonoBehaviour
             HitZone zone = hit.collider.GetComponentInParent<HitZone>();
             CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
 
-            targetingEnemy =
-                zone != null ||
+            targetingEnemy = zone != null ||
                 (health != null && health != GetComponent<CombatHealth>());
         }
 
-        crosshair.color = targetingEnemy
-            ? targetCrosshairColor
-            : normalCrosshairColor;
+        crosshair.color = targetingEnemy ? targetCrosshairColor : normalCrosshairColor;
     }
 
     private void KeepCrosshairCentered()
@@ -184,9 +194,7 @@ public class ArcadeWeaponController : MonoBehaviour
         if (currentAmmo >= magazineSize || reserveAmmo <= 0)
             return;
 
-        int needed = magazineSize - currentAmmo;
-        int transferred = Mathf.Min(needed, reserveAmmo);
-
+        int transferred = Mathf.Min(magazineSize - currentAmmo, reserveAmmo);
         currentAmmo += transferred;
         reserveAmmo -= transferred;
 

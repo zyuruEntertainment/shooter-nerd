@@ -1190,6 +1190,51 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!1 &350003868
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 350003870}
+  - component: {fileID: 350003869}
+  m_Layer: 0
+  m_Name: Economy
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &350003869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 350003868}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0a79e7c10d30d54eb18fbf919218f88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerWallet
+  startingCredits: 2500
+--- !u!4 &350003870
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 350003868}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -21.24596, y: -43.49644, z: 8.71096}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &393859450
 GameObject:
   m_ObjectHideFlags: 0
@@ -1445,6 +1490,8 @@ GameObject:
   - component: {fileID: 579181617}
   - component: {fileID: 579181616}
   - component: {fileID: 579181618}
+  - component: {fileID: 579181620}
+  - component: {fileID: 579181619}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1783,6 +1830,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0e8d06c31c9b56489452d6320cd4645, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatStats
+--- !u!114 &579181619
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 579181601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e81c275b1fb45fb4dbf9f48f8cb1f6ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArcadeWeaponController
+  weaponName: AK-47
+  magazineSize: 6
+  startingReserveAmmo: 114
+  startingMagazineAmmo: 6
+  fireInterval: 0.15
+  damage: 20
+  range: 100
+  shootingAnimationDuration: 0.2
+  aimCamera: {fileID: 330585545}
+  crosshair: {fileID: 9218816580816052320}
+  ammoText: {fileID: 1719770441135989765}
+  spriteController: {fileID: 579181613}
+  hitboxMask:
+    serializedVersion: 2
+    m_Bits: 8
+--- !u!114 &579181620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 579181601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 525162d8de0d222439a1f18dab64b177, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponManager
+  weaponController: {fileID: 579181616}
+  startingWeapon: {fileID: 11400000, guid: 8acfe01801d01364999922a3801b1268, type: 2}
+  startingOwnedWeapons: []
 --- !u!1 &771412170
 GameObject:
   m_ObjectHideFlags: 0
@@ -5102,3 +5191,4 @@ SceneRoots:
   - {fileID: 1987249843}
   - {fileID: 28293810}
   - {fileID: 1268346872}
+  - {fileID: 350003870}
