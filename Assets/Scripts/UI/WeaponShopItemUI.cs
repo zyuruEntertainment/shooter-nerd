@@ -11,9 +11,22 @@ public class WeaponShopItemUI : MonoBehaviour
     [SerializeField] private TMP_Text statsText;
     [SerializeField] private TMP_Text actionText;
     [SerializeField] private Image weaponIcon;
-    [SerializeField] private Button actionButton;
 
-    public void Setup(WeaponData weapon, bool isOwned, bool isEquipped, Action onClick)
+    private Button cardButton;
+
+    private void Awake()
+    {
+        cardButton = GetComponent<Button>();
+
+        if (cardButton == null)
+            Debug.LogError("Button tidak ditemukan pada root WeaponShopItemUI!", this);
+    }
+
+    public void Setup(
+        WeaponData weapon,
+        bool isOwned,
+        bool isEquipped,
+        Action onClick)
     {
         if (weapon == null)
         {
@@ -25,7 +38,9 @@ public class WeaponShopItemUI : MonoBehaviour
             weaponNameText.text = weapon.WeaponName;
 
         if (priceText != null)
-            priceText.text = isOwned ? "OWNED" : weapon.Price.ToString("N0") + " credits";
+            priceText.text = isOwned
+                ? "OWNED"
+                : weapon.Price.ToString("N0") + " credits";
 
         if (statsText != null)
         {
@@ -43,13 +58,17 @@ public class WeaponShopItemUI : MonoBehaviour
         }
 
         if (actionText != null)
-            actionText.text = isEquipped ? "EQUIPPED" : isOwned ? "EQUIP" : "BUY";
-
-        if (actionButton != null)
         {
-            actionButton.onClick.RemoveAllListeners();
-            actionButton.interactable = !isEquipped;
-            actionButton.onClick.AddListener(() => onClick?.Invoke());
+            actionText.text = isEquipped
+                ? "EQUIPPED"
+                : isOwned ? "EQUIP" : "BUY";
+        }
+
+        if (cardButton != null)
+        {
+            cardButton.onClick.RemoveAllListeners();
+            cardButton.interactable = !isEquipped;
+            cardButton.onClick.AddListener(() => onClick?.Invoke());
         }
     }
 }
