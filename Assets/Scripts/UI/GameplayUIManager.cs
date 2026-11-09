@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public class GameplayUIManager : MonoBehaviour
@@ -16,21 +17,7 @@ public class GameplayUIManager : MonoBehaviour
 
     private bool shopIsOpen;
     private bool isLoading;
-
     private float previousTimeScale = 1f;
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.B))
-        {
-            OpenShop();
-        }
-
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            CloseShop();
-        }
-    }
 
     private void Awake()
     {
@@ -41,6 +28,20 @@ public class GameplayUIManager : MonoBehaviour
         }
 
         Instance = this;
+    }
+
+    private void Update()
+    {
+        Keyboard keyboard = Keyboard.current;
+
+        if (keyboard == null)
+            return;
+
+        if (keyboard.bKey.wasPressedThisFrame)
+            OpenShop();
+
+        if (keyboard.escapeKey.wasPressedThisFrame)
+            CloseShop();
     }
 
     public void OpenShop()
@@ -55,17 +56,14 @@ public class GameplayUIManager : MonoBehaviour
     {
         isLoading = true;
 
-        // Sembunyikan seluruh UI gameplay.
         SetGameplayUI(false);
 
-        // Simpan dan jeda waktu gameplay.
         if (pauseGameplay)
         {
             previousTimeScale = Time.timeScale;
             Time.timeScale = 0f;
         }
 
-        // Periksa apakah BuyMenu sudah dimuat.
         Scene shopScene = SceneManager.GetSceneByName(shopSceneName);
 
         if (!shopScene.isLoaded)
@@ -79,6 +77,7 @@ public class GameplayUIManager : MonoBehaviour
             {
                 Debug.LogError("Gagal memuat scene " + shopSceneName);
                 RestoreGameplay();
+                isLoading = false;
                 yield break;
             }
 
@@ -117,7 +116,6 @@ public class GameplayUIManager : MonoBehaviour
         }
 
         RestoreGameplay();
-
         isLoading = false;
     }
 
