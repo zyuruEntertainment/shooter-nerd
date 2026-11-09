@@ -19,6 +19,8 @@ public class GameplayUIManager : MonoBehaviour
     private GameObject shopInstance;
     private bool shopIsOpen;
     private float previousTimeScale = 1f;
+    private CursorLockMode previousCursorLockState;
+    private bool previousCursorVisible;
 
     private void Awake()
     {
@@ -47,8 +49,7 @@ public class GameplayUIManager : MonoBehaviour
 
     public void OpenShop()
     {
-        if (shopIsOpen)
-            return;
+        if (shopIsOpen) return;
 
         if (shopPrefab == null)
         {
@@ -57,8 +58,15 @@ public class GameplayUIManager : MonoBehaviour
         }
 
         shopIsOpen = true;
-
         SetGameplayUI(false);
+
+        // simpan kondisi kursor sebelumnya
+        previousCursorLockState = Cursor.lockState;
+        previousCursorVisible = Cursor.visible;
+
+        // tampilkan kursor
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
 
         if (pauseGameplay)
         {
@@ -66,21 +74,13 @@ public class GameplayUIManager : MonoBehaviour
             Time.timeScale = 0f;
         }
 
-        shopInstance = Instantiate(
-            shopPrefab,
-            shopParent,
-            false
-        );
-
+        shopInstance = Instantiate(shopPrefab, shopParent, false);
         shopInstance.SetActive(true);
-
-        Debug.Log("Shop UI berhasil dibuka!");
     }
 
     public void CloseShop()
     {
-        if (!shopIsOpen)
-            return;
+        if (!shopIsOpen) return;
 
         if (shopInstance != null)
         {
@@ -89,13 +89,14 @@ public class GameplayUIManager : MonoBehaviour
         }
 
         shopIsOpen = false;
-
         SetGameplayUI(true);
+
+        // kembalikan kondisi kursor gameplay
+        Cursor.lockState = previousCursorLockState;
+        Cursor.visible = previousCursorVisible;
 
         if (pauseGameplay)
             Time.timeScale = previousTimeScale;
-
-        Debug.Log("Shop UI berhasil ditutup!");
     }
 
     private void SetGameplayUI(bool state)
@@ -115,6 +116,15 @@ public class GameplayUIManager : MonoBehaviour
                 Time.timeScale = previousTimeScale;
 
             Instance = null;
+        }
+    }
+    private void LateUpdate()
+    {
+        if (shopIsOpen)
+        {
+            // paksa kursor tetap terlihat selama shop terbuka
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
     }
 }
