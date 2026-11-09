@@ -1,8 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 public class GameplayUIManager : MonoBehaviour
 {
@@ -11,12 +9,15 @@ public class GameplayUIManager : MonoBehaviour
     [Header("Gameplay UI")]
     [SerializeField] private List<GameObject> gameplayUI = new List<GameObject>();
 
-    [Header("Shop Scene")]
-    [SerializeField] private string shopSceneName = "BuyMenu";
+    [Header("Shop Prefab")]
+    [SerializeField] private GameObject shopPrefab;
+    [SerializeField] private Transform shopParent;
+
+    [Header("Settings")]
     [SerializeField] private bool pauseGameplay = true;
 
+    private GameObject shopInstance;
     private bool shopIsOpen;
-    private bool isLoading;
     private float previousTimeScale = 1f;
 
     private void Awake()
@@ -46,15 +47,16 @@ public class GameplayUIManager : MonoBehaviour
 
     public void OpenShop()
     {
-        if (shopIsOpen || isLoading)
+        if (shopIsOpen)
             return;
 
-        StartCoroutine(OpenShopRoutine());
-    }
+        if (shopPrefab == null)
+        {
+            Debug.LogError("Shop Prefab belum diatur!");
+            return;
+        }
 
-    private IEnumerator OpenShopRoutine()
-    {
-        isLoading = true;
+        shopIsOpen = true;
 
         SetGameplayUI(false);
 
@@ -64,59 +66,36 @@ public class GameplayUIManager : MonoBehaviour
             Time.timeScale = 0f;
         }
 
-        Scene shopScene = SceneManager.GetSceneByName(shopSceneName);
+        shopInstance = Instantiate(
+            shopPrefab,
+            shopParent,
+            false
+        );
 
-        if (!shopScene.isLoaded)
-        {
-            AsyncOperation operation = SceneManager.LoadSceneAsync(
-                shopSceneName,
-                LoadSceneMode.Additive
-            );
+        shopInstance.SetActive(true);
 
-            if (operation == null)
-            {
-                Debug.LogError("Gagal memuat scene " + shopSceneName);
-                RestoreGameplay();
-                isLoading = false;
-                yield break;
-            }
-
-            while (!operation.isDone)
-                yield return null;
-        }
-
-        shopIsOpen = true;
-        isLoading = false;
+        Debug.Log("Shop UI berhasil dibuka!");
     }
 
     public void CloseShop()
     {
-        if (!shopIsOpen || isLoading)
+        if (!shopIsOpen)
             return;
 
-        StartCoroutine(CloseShopRoutine());
-    }
-
-    private IEnumerator CloseShopRoutine()
-    {
-        isLoading = true;
-
-        Scene shopScene = SceneManager.GetSceneByName(shopSceneName);
-
-        if (shopScene.isLoaded)
+        if (shopInstance != null)
         {
-            AsyncOperation operation =
-                SceneManager.UnloadSceneAsync(shopSceneName);
-
-            if (operation != null)
-            {
-                while (!operation.isDone)
-                    yield return null;
-            }
+            Destroy(shopInstance);
+            shopInstance = null;
         }
 
-        RestoreGameplay();
-        isLoading = false;
+        shopIsOpen = false;
+
+        SetGameplayUI(true);
+
+        if (pauseGameplay)
+            Time.timeScale = previousTimeScale;
+
+        Debug.Log("Shop UI berhasil ditutup!");
     }
 
     private void SetGameplayUI(bool state)
@@ -128,19 +107,14 @@ public class GameplayUIManager : MonoBehaviour
         }
     }
 
-    private void RestoreGameplay()
-    {
-        shopIsOpen = false;
-
-        SetGameplayUI(true);
-
-        if (pauseGameplay)
-            Time.timeScale = previousTimeScale;
-    }
-
     private void OnDestroy()
     {
         if (Instance == this)
+        {
+            if (pauseGameplay && shopIsOpen)
+                Time.timeScale = previousTimeScale;
+
             Instance = null;
+        }
     }
 }

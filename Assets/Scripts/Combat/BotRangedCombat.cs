@@ -17,6 +17,7 @@ public class BotRangedCombat : MonoBehaviour
     [Header("Aim Lock")]
     [SerializeField, Min(0f)] private float aimLockDelay = 0f;
     [SerializeField, Min(0f)] private float aimRotationSpeed = 540f;
+    [SerializeField, Min(0f)] private float aimPersistenceTime = 0.5f; // keep aiming at last known position for this long after losing sight
 
     [Header("Target Leading")]
     [Tooltip("Seconds to lead the target. 0 = aim at current position.")]
@@ -34,6 +35,7 @@ public class BotRangedCombat : MonoBehaviour
     private float nextAttackTime;
     private float aimTimer;
     private bool isAiming;
+    private float lastSeenTimer; // tracks how long since player went out of vision
 
     private void Awake()
     {
@@ -84,8 +86,23 @@ public class BotRangedCombat : MonoBehaviour
 
         if (!vision.CanSeePlayer)
         {
-            ResetAim();
-            return;
+            // Keep aiming at last known position for aimPersistenceTime seconds
+            // after losing sight, rather than resetting immediately.
+            lastSeenTimer += Time.deltaTime;
+            if (lastSeenTimer < aimPersistenceTime)
+            {
+                // Still within persistence window: continue aiming at last known position.
+                // We'll use the last known position below; just skip the early return.
+            }
+            else
+            {
+                ResetAim();
+                return;
+            }
+        }
+        else
+        {
+            lastSeenTimer = 0f; // reset persistence timer when player is visible
         }
 
         float distance = Vector3.Distance(
@@ -217,6 +234,12 @@ public class BotRangedCombat : MonoBehaviour
 
         Vector3 pos = playerTarget.position;
 
+        // If player is not currently visible, use last known position for aiming
+        if (vision != null && !vision.CanSeePlayer && lastSeenTimer < aimPersistenceTime)
+        {
+            pos = vision.LastKnownPosition;
+        }
+
         float lead =
             settings != null
             ? settings.LeadTime
@@ -224,7 +247,9 @@ public class BotRangedCombat : MonoBehaviour
 
         if (lead > 0f && playerPhysics != null)
         {
-            pos += playerPhysics.HorizontalVelocity * lead;
+            // Use the physics velocity of whatever position we're using
+            Vector3 physVel = playerPhysics.HorizontalVelocity;
+            pos += physVel * lead;
         }
 
         pos.y = shootOrigin.position.y;

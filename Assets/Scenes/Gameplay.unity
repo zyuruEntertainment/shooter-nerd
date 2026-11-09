@@ -3724,7 +3724,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1447074498}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1653820457}
+        m_TargetAssemblyTypeName: GameplayUIManager, Assembly-CSharp
+        m_MethodName: OpenShop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1447074498
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4169,7 +4181,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameplayUIManager
   gameplayUI:
   - {fileID: 1421940840}
-  shopSceneName: BuyMenu
+  shopPrefab: {fileID: 7216996241579831791, guid: b35155ae2c192d74c898ae8e4870f02d, type: 3}
+  shopParent: {fileID: 0}
   pauseGameplay: 0
 --- !u!4 &1653820458
 Transform:
