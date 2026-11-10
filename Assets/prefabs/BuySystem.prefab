@@ -1083,6 +1083,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
   weaponData: {fileID: 11400000, guid: bfd45ca878c0cdc4d9361da3c1ab39a3, type: 2}
+  ammoData: {fileID: 0}
+  isAmmoCard: 0
   cardPanel: {fileID: 8812410872164348420}
   cardButton: {fileID: 4320639582686238454}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -1404,6 +1406,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
   weaponData: {fileID: 11400000, guid: 8acfe01801d01364999922a3801b1268, type: 2}
+  ammoData: {fileID: 0}
+  isAmmoCard: 0
   cardPanel: {fileID: 1361439193292288960}
   cardButton: {fileID: 488751010001145572}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -2499,10 +2503,15 @@ MonoBehaviour:
   weapons:
   - {fileID: 11400000, guid: 8acfe01801d01364999922a3801b1268, type: 2}
   - {fileID: 11400000, guid: bfd45ca878c0cdc4d9361da3c1ab39a3, type: 2}
+  ammos:
+  - {fileID: 11400000, guid: ed3fc0d11b1e17b4ea0f17bcf68f1b3e, type: 2}
   creditsText: {fileID: 551940695901938583}
   statusText: {fileID: 8213122992383570284}
+  ammoStatusText: {fileID: 8213122992383570284}
   weaponManager: {fileID: 6509669723857579626, guid: be53475310485ba4b803e84548afc7b2, type: 3}
-  wallet: {fileID: 6004917485110353281, guid: 739d9d472a65f49459fab7bc9659e78e, type: 3}
+  wallet: {fileID: 5673621656056494409, guid: be53475310485ba4b803e84548afc7b2, type: 3}
+  playerWeaponController: {fileID: 74464650883802570, guid: be53475310485ba4b803e84548afc7b2, type: 3}
+  showAmmoCatalog: 1
 --- !u!114 &9000000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2606,8 +2615,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
   weaponData: {fileID: 0}
-  cardPanel: {fileID: 0}
-  cardButton: {fileID: 0}
+  ammoData: {fileID: 11400000, guid: ed3fc0d11b1e17b4ea0f17bcf68f1b3e, type: 2}
+  isAmmoCard: 1
+  cardPanel: {fileID: 3781484271807369}
+  cardButton: {fileID: 4091724979573582639}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   selectedColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &7367288099751324174

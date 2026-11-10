@@ -6,30 +6,41 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Pengatur toko tunggal (single source of truth).
-/// Tangani seleksi kartu item, panel informasi, tampilan saldo, dan transaksi pembelian.
+/// Tangani seleksi kartu item, panel informasi, tampilan saldo, dan transaksi pembelian weapon maupun ammo.
 /// UI tidak mengelola saldo atau kepemilikan sendiri; keduanya ada di PlayerWallet dan WeaponManager.
 /// </summary>
 public class WeaponShopController : MonoBehaviour
 {
     public static WeaponShopController Instance { get; private set; }
 
-    [Header("Katalog Toko")]
+    [Header("Katalog Toko - Weapon")]
     [SerializeField] private WeaponData[] weapons;
+
+    [Header("Katalog Toko - Ammo")]
+    [SerializeField] private AmmoData[] ammos;
 
     [Header("Referensi UI")]
     [SerializeField] private TMP_Text creditsText;
     [SerializeField] private TMP_Text statusText;
+    [SerializeField] private TMP_Text ammoStatusText; // menampilkan ammo aktif (x/x)
 
     [Header("Referensi Logika")]
     [SerializeField] private WeaponManager weaponManager;
     [SerializeField] private PlayerWallet wallet;
+    [SerializeField] private ArcadeWeaponController playerWeaponController;
+
+    [Header("Mode Toko")]
+    [SerializeField] private bool showAmmoCatalog = true;
 
     private WeaponShopItemUI itemPanel;
     private Button buyButton;
-    private readonly List<WeaponCardUI> cards = new List<WeaponCardUI>();
+    private readonly List<WeaponCardUI> weaponCards = new List<WeaponCardUI>();
+    private readonly List<WeaponCardUI> ammoCards = new List<WeaponCardUI>();
     private WeaponCardUI selectedCard;
     private WeaponData selectedWeapon;
+    private AmmoData selectedAmmo;
     private bool isInitialized;
+    private bool isBuyingAmmo;
 
     private void Awake()
     {
@@ -46,6 +57,11 @@ public class WeaponShopController : MonoBehaviour
         if (wallet == null)
             wallet = PlayerWallet.Instance;
 
+        // Ambil ArcadeWeaponController dari WeaponManager (yang aktif dan digunakan pemain),
+        // bukan mencari sendiri via tag yang bisa dapat controller yang salah.
+        if (playerWeaponController == null && WeaponManager.Instance != null)
+            playerWeaponController = WeaponManager.Instance.ActiveWeaponController;
+
         itemPanel = GetComponent<WeaponShopItemUI>();
 
         // Pastikan ada tombol beli/equip terpisah (tidak bergantung pada kartu item di prefab).
@@ -58,6 +74,16 @@ public class WeaponShopController : MonoBehaviour
             return;
         isInitialized = true;
 
+        // Pastikan selalu terhubung ke instance aktif di scene via singleton,
+        // agar tidak bergantung pada referensi prefab yang bisa tidak terresolve
+        // saat BuySystem di-instantiate di runtime.
+        weaponManager = WeaponManager.Instance;
+        wallet = PlayerWallet.Instance;
+
+        // Pastikan playerWeaponController selalu dari WeaponManager (controller aktif pemain).
+        if (playerWeaponController == null && WeaponManager.Instance != null)
+            playerWeaponController = WeaponManager.Instance.ActiveWeaponController;
+
         if (weaponManager == null || wallet == null || itemPanel == null)
         {
             Debug.LogError("WeaponShopController: WeaponManager, PlayerWallet, atau WeaponShopItemUI (panel info) belum tersedia.", this);
@@ -65,8 +91,10 @@ public class WeaponShopController : MonoBehaviour
         }
 
         BuildCards();
+        BuildAmmoCards();
         wallet.OnCreditsChanged += UpdateCredits;
         UpdateCredits(wallet.Credits);
+        UpdateAmmoStatus();
 
         if (buyButton != null)
         {
@@ -95,14 +123,28 @@ public class WeaponShopController : MonoBehaviour
         if (buyButton != null)
             return;
 
-        var existing = transform.Find("ShopBuyButton")?.GetComponent<Button>();
-        if (existing != null)
+        // Cari tombol beli yang sudah ada di prefab (nama "BuyButton"), cari rekursif di seluruh children.
+        var buttons = GetComponentsInChildren<Button>(true);
+        foreach (var btn in buttons)
         {
-            buyButton = existing;
-            return;
+            if (btn.name == "BuyButton")
+            {
+                buyButton = btn;
+                return;
+            }
         }
 
-        // Buat tombol beli/equip di root shop agar tidak bentrok dengan kartu item (WeaponCardUI).
+        // Fallback: cari nama alternatif.
+        foreach (var btn in buttons)
+        {
+            if (btn.name == "ShopBuyButton")
+            {
+                buyButton = btn;
+                return;
+            }
+        }
+
+        // Buat tombol beli/equip di root shop jika tidak ada sama sekali.
         var go = new GameObject("ShopBuyButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         go.transform.SetParent(transform, false);
 
@@ -122,19 +164,51 @@ public class WeaponShopController : MonoBehaviour
     private void BuildCards()
     {
         WeaponCardUI[] found = GetComponentsInChildren<WeaponCardUI>(true);
-        int index = 0;
+        int weaponIndex = 0;
 
         foreach (WeaponCardUI card in found)
         {
             if (card == null)
                 continue;
 
-            if (index < weapons.Length && weapons[index] != null)
+            // Hanya kartu yang BUKAN ammo yang diproses di sini.
+            if (card.IsAmmo)
+                continue;
+
+            if (weaponIndex < weapons.Length && weapons[weaponIndex] != null)
             {
                 card.gameObject.SetActive(true);
-                card.Initialize(weapons[index], () => OnCardSelected(card));
-                cards.Add(card);
-                index++;
+                card.Initialize(weapons[weaponIndex], () => OnCardSelected(card));
+                weaponCards.Add(card);
+                weaponIndex++;
+            }
+            else
+            {
+                card.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private void BuildAmmoCards()
+    {
+        WeaponCardUI[] found = GetComponentsInChildren<WeaponCardUI>(true);
+        int ammoIndex = 0;
+
+        foreach (WeaponCardUI card in found)
+        {
+            if (card == null)
+                continue;
+
+            // Hanya kartu ammo yang diproses di sini.
+            if (!card.IsAmmo)
+                continue;
+
+            if (ammoIndex < ammos.Length && ammos[ammoIndex] != null)
+            {
+                card.gameObject.SetActive(true);
+                card.Initialize(ammos[ammoIndex], () => OnAmmoCardSelected(card));
+                ammoCards.Add(card);
+                ammoIndex++;
             }
             else
             {
@@ -145,20 +219,34 @@ public class WeaponShopController : MonoBehaviour
 
     private void SelectFirst()
     {
-        if (cards.Count > 0)
-            OnCardSelected(cards[0]);
+        if (weaponCards.Count > 0)
+            OnCardSelected(weaponCards[0]);
+        else if (showAmmoCatalog && ammoCards.Count > 0)
+        {
+            // Tidak ada weapon card, pilih ammo pertama.
+            OnAmmoCardSelected(ammoCards[0]);
+        }
     }
 
+    /// <summary>Pilih weapon card (dari UI).</summary>
     private void OnCardSelected(WeaponCardUI card)
     {
         if (card == null || card.Weapon == null)
             return;
 
+        isBuyingAmmo = false;
+        selectedAmmo = null;
+
         // Hanya satu kartu yang boleh terpilih: yang dipilih putih, sisanya normal.
-        foreach (WeaponCardUI c in cards)
+        foreach (WeaponCardUI c in weaponCards)
         {
             if (c != null)
                 c.SetSelected(c == card);
+        }
+        foreach (WeaponCardUI c in ammoCards)
+        {
+            if (c != null)
+                c.SetSelected(false);
         }
 
         selectedCard = card;
@@ -166,24 +254,70 @@ public class WeaponShopController : MonoBehaviour
         RefreshInfoPanel();
     }
 
-    private void RefreshInfoPanel()
+    /// <summary>Pilih ammo card (dari UI).</summary>
+    private void OnAmmoCardSelected(WeaponCardUI card)
     {
-        if (itemPanel == null || selectedWeapon == null)
+        if (card == null || card.Ammo == null)
             return;
 
-        bool owned = weaponManager.IsOwned(selectedWeapon);
-        bool equipped = weaponManager.IsEquipped(selectedWeapon);
+        isBuyingAmmo = true;
+        selectedWeapon = null;
+        selectedAmmo = card.Ammo;
 
-        // Panel informasi menampilkan item yang dipilih terakhir: nama, ikon, harga, status kepemilikan, dll.
-        itemPanel.Setup(selectedWeapon, owned, equipped, OnBuyClicked);
+        // Kosongkan seleksi weapon card.
+        foreach (WeaponCardUI c in weaponCards)
+        {
+            if (c != null)
+                c.SetSelected(false);
+        }
+        foreach (WeaponCardUI c in ammoCards)
+        {
+            if (c != null)
+                c.SetSelected(c == card);
+        }
 
-        // Tombol beli/equip tidak dapat diklik jika item sudah dipakai (status EQUIPPED).
-        if (buyButton != null)
-            buyButton.interactable = !equipped;
+        selectedCard = card;
+        RefreshInfoPanel();
+    }
+
+    private void RefreshInfoPanel()
+    {
+        if (itemPanel == null)
+            return;
+
+        UpdateAmmoStatus();
+
+        if (isBuyingAmmo && selectedAmmo != null)
+        {
+            // Tampilkan info ammo.
+            bool canAfford = wallet != null && wallet.CanAfford(selectedAmmo.Price);
+            itemPanel.SetupAmmo(selectedAmmo, canAfford, OnBuyAmmoClicked);
+
+            if (buyButton != null)
+                buyButton.interactable = canAfford;
+        }
+        else if (selectedWeapon != null)
+        {
+            // Tampilkan info weapon.
+            bool owned = weaponManager.IsOwned(selectedWeapon);
+            bool equipped = weaponManager.IsEquipped(selectedWeapon);
+
+            itemPanel.Setup(selectedWeapon, owned, equipped, OnBuyClicked);
+
+            // Tombol beli/equip tidak dapat diklik jika item sudah dipakai (status EQUIPPED).
+            if (buyButton != null)
+                buyButton.interactable = !equipped;
+        }
     }
 
     public void OnBuyClicked()
     {
+        if (isBuyingAmmo)
+        {
+            OnBuyAmmoClicked();
+            return;
+        }
+
         if (selectedWeapon == null || weaponManager == null)
             return;
 
@@ -194,11 +328,55 @@ public class WeaponShopController : MonoBehaviour
 
         if (success)
         {
-            // Perbarui panel informasi dan status kartu (miliki/equip) setelah transaksi.
             RefreshInfoPanel();
         }
 
         UpdateCredits(wallet.Credits);
+    }
+
+    private void OnBuyAmmoClicked()
+    {
+        if (selectedAmmo == null || wallet == null || playerWeaponController == null || weaponManager == null)
+            return;
+
+        if (!wallet.CanAfford(selectedAmmo.Price))
+        {
+            if (statusText != null)
+                statusText.text = "Credits tidak cukup untuk beli ammo.";
+            return;
+        }
+
+        // Cek apakah senjata yang sedang dipakai (equipped) cocok dengan ammo ini.
+        WeaponData equipped = weaponManager.EquippedWeapon;
+        if (equipped == null || !selectedAmmo.IsCompatible(equipped))
+        {
+            if (statusText != null)
+                statusText.text = "Senjata aktif tidak cocok dengan ammo ini.";
+            Debug.LogWarning($"[WeaponShopController] Senjata equipped ({equipped?.WeaponName ?? "none"}) tidak cocok dengan ammo {selectedAmmo.AmmoName}");
+            return;
+        }
+
+        // Kurangi kredit.
+        wallet.TrySpend(selectedAmmo.Price);
+
+        // Tambah ammo ke senjata yang sedang dipakai.
+        playerWeaponController.AddAmmo(selectedAmmo.AmountPerPurchase);
+
+        if (statusText != null)
+            statusText.text = "Berbeli ammo " + selectedAmmo.AmmoName + " +" + selectedAmmo.AmountPerPurchase;
+
+        UpdateCredits(wallet.Credits);
+        UpdateAmmoStatus();
+
+        Debug.Log($"[WeaponShopController] Beli ammo {selectedAmmo.AmmoName} +{selectedAmmo.AmountPerPurchase} untuk {equipped.WeaponName}. Sisa kredit {wallet.Credits}");
+    }
+
+    private void UpdateAmmoStatus()
+    {
+        if (ammoStatusText == null || playerWeaponController == null)
+            return;
+
+        ammoStatusText.text = playerWeaponController.CurrentAmmo + "/" + playerWeaponController.ReserveAmmo;
     }
 
     private void UpdateCredits(int amount)
@@ -211,5 +389,6 @@ public class WeaponShopController : MonoBehaviour
     {
         RefreshInfoPanel();
         UpdateCredits(wallet != null ? wallet.Credits : 0);
+        UpdateAmmoStatus();
     }
 }

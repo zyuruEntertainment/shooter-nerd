@@ -50,13 +50,6 @@ public class BotSettings : MonoBehaviour
     [Tooltip("Air deceleration.")]
     [SerializeField, Min(0f)] private float airDeceleration = 0.5f;
 
-    [Header("Combat")]
-    [Tooltip("Distance at which the bot switches to Attack state.")]
-    [SerializeField, Min(0f)] private float attackRange = 1.5f;
-
-    [Tooltip("Cooldown between attacks in seconds.")]
-    [SerializeField, Min(0f)] private float attackCooldown = 0.8f;
-
     [Header("Engage / Strafe")]
     [Tooltip("Distance at which the bot stops chasing and starts strafing/shooting instead of closing in.")]
     [SerializeField, Min(0f)] private float engageRange = 10f;
@@ -77,7 +70,7 @@ public class BotSettings : MonoBehaviour
     [Tooltip("How long the bot remembers it was damaged by the player (used to decide Patrol vs Chase).")]
     [SerializeField, Min(0f)] private float damageMemoryDuration = 10f;
 
-    [Tooltip("Minimum seconds between charges (cooldown). Bot tidak akan charger lagi jika masih dalam cooldown.")]
+    [Tooltip("Minimum seconds between charges (cooldown). Bot tidak akan charge lagi jika masih dalam cooldown.")]
     [SerializeField, Min(0f)] private float chargeCooldown = 4f;
 
     [Header("Crouch (bot agility - makes bot harder to hit)")]
@@ -145,9 +138,6 @@ public class BotSettings : MonoBehaviour
     [SerializeField, Min(0.5f)] private float wanderInterval = 4f;
 
     [Header("Combat Balance (smarter / harder)")]
-    [Tooltip("Damage dealt by the bot (ranged + melee). Keep equal to player weapon damage for fairness.")]
-    [SerializeField, Min(0f)] private float attackDamage = 20f;
-
     [Tooltip("Minimum seconds between strafe direction changes (unpredictable).")]
     [SerializeField, Min(0.1f)] private float strafeMinInterval = 0.8f;
 
@@ -175,8 +165,6 @@ public class BotSettings : MonoBehaviour
     public float RotationSpeed => rotationSpeed;
     public float AirAcceleration => airAcceleration;
     public float AirDeceleration => airDeceleration;
-    public float AttackRange => attackRange;
-    public float AttackCooldown => attackCooldown;
     public float EngageRange => engageRange;
     public float StrafeSpeed => strafeSpeed;
     public float StrafeChangeInterval => strafeChangeInterval;
@@ -203,8 +191,6 @@ public class BotSettings : MonoBehaviour
     public float ReactionTimeMax => reactionTimeMax;
     public float WanderRadius => wanderRadius;
     public float WanderInterval => wanderInterval;
-
-    public float AttackDamage => attackDamage;
     public float StrafeMinInterval => strafeMinInterval;
     public float StrafeMaxInterval => strafeMaxInterval;
     public float LeadTime => leadTime;

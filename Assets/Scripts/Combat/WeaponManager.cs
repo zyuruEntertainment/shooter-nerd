@@ -20,6 +20,9 @@ public class WeaponManager : MonoBehaviour
     public WeaponData EquippedWeapon { get; private set; }
     public IReadOnlyList<WeaponData> OwnedWeapons => ownedWeapons;
 
+    /// <summary>ArcadeWeaponController yang aktif dan sedang digunakan oleh pemain.</summary>
+    public ArcadeWeaponController ActiveWeaponController => weaponController;
+
     /// <summary>Dipanggil setiap kali daftar kepemilihan atau senjata aktif berubah.</summary>
     public event Action OnOwnershipChanged;
 
@@ -36,43 +39,21 @@ public class WeaponManager : MonoBehaviour
         if (weaponController == null)
             weaponController = GetComponent<ArcadeWeaponController>();
 
-        // Muat data penyimpanan sebelum daftar kepemilikan dipakai UI.
-        SaveSystem.Load();
+        // Mulai setiap kali Play dengan inventory senjata kosong:
+        // tidak memuat senjata dari penyimpanan, tidak menggunakan
+        // startingOwnedWeapons, dan tidak melengkapi startingWeapon.
+        ownedWeapons.Clear();
+        EquippedWeapon = null;
 
-        bool hasSavedOwned = SaveSystem.currentData.ownedWeaponNames != null
-                             && SaveSystem.currentData.ownedWeaponNames.Count > 0;
-
-        if (hasSavedOwned)
+        // Pastikan semua weapon controller pada Player tidak menampilkan senjata default
+        // saat inventory kosong. (Terkadang ada duplikat ArcadeWeaponController di prefab.)
+        var controllers = GetComponents<ArcadeWeaponController>();
+        foreach (var ctrl in controllers)
         {
-            // Data tersimpan lebih diprioritaskan daripada nilai awal scene.
-            ownedWeapons.Clear();
-            foreach (string name in SaveSystem.currentData.ownedWeaponNames)
-            {
-                WeaponData weapon = FindWeaponByName(name);
-                if (weapon != null)
-                    AddOwnedWeapon(weapon);
-            }
-
-            if (!string.IsNullOrEmpty(SaveSystem.currentData.equippedWeaponName))
-            {
-                WeaponData equipped = FindWeaponByName(SaveSystem.currentData.equippedWeaponName);
-                if (equipped != null && IsOwned(equipped))
-                    Equip(equipped);
-            }
-        }
-        else
-        {
-            foreach (WeaponData weapon in startingOwnedWeapons)
-                AddOwnedWeapon(weapon);
-
-            if (startingWeapon != null)
-            {
-                AddOwnedWeapon(startingWeapon);
-                Equip(startingWeapon);
-            }
+            ctrl.ClearWeapon();
         }
 
-        // Pastikan berkas penyimpanan tercreate meski pemain belum melakukan transaksi.
+        // Buat berkas penyimpanan agar state awal (kosong) tersimpan dan konsisten.
         SyncAndSaveOwnership();
     }
 
@@ -142,7 +123,7 @@ public class WeaponManager : MonoBehaviour
 
         if (weaponController == null)
         {
-            Debug.LogError($"WeaponManager: ArcadeWeaponController tidak ditemukan di {gameObject.name}. Tidali dapat equip weapon {weapon?.WeaponName}.");
+            Debug.LogError($"WeaponManager: ArcadeWeaponController tidak ditemukan di {gameObject.name}. Tidak dapat equip weapon {weapon?.WeaponName}.");
             return false;
         }
 

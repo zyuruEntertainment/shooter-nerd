@@ -21,12 +21,15 @@ public class PlayerWallet : MonoBehaviour
 
         Instance = this;
 
-        // Muat data sebelum UI menampilkan saldo. Jangan mengandalkan perubahan
-        // ScriptableObject runtime sebagai penyimpanan permanen.
-        SaveSystem.Load();
-        Credits = SaveSystem.currentData.credits;
-        if (Credits < 0)
-            Credits = startingCredits;
+        // Jika nilai di Inspector tertulis 0 (atau kosong), paksa default 2500
+        // agar saldo tidak pernah tampil 0 saat memulai play.
+        int saldoAwal = startingCredits > 0 ? startingCredits : 2500;
+
+        // Reset saldo setiap kali Play dimulai. Tidak muat dari berkas penyimpanan
+        // lama sehingga saldo tidak tertahan pada 0 dari sesi sebelumnya.
+        Credits = saldoAwal;
+        SaveSystem.currentData.credits = Credits;
+        SaveSystem.Save();
 
         OnCreditsChanged?.Invoke(Credits);
     }

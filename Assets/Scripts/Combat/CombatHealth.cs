@@ -1,4 +1,14 @@
+using System;
 using UnityEngine;
+
+/// <summary>
+/// Antarmuka untuk objek yang dapat menerima damage.
+/// Digunakan oleh CombatHealth dan sistem serangan (melee/ranged).
+/// </summary>
+public interface IDamageable
+{
+    void TakeDamage(float amount);
+}
 
 public class CombatHealth : MonoBehaviour, IDamageable
 {
@@ -11,6 +21,12 @@ public class CombatHealth : MonoBehaviour, IDamageable
     private CombatHealth lastAttacker;
 
     public event System.Action<float> OnTakeDamage;
+
+    [Header("Kill Reward")]
+    [Tooltip("Jumlah kredit minimum yang diberikan kepada pembunuh saat kill.")]
+    [SerializeField, Min(0)] private int minKillReward = 250;
+    [Tooltip("Jumlah kredit maksimum yang diberikan kepada pembunuh saat kill.")]
+    [SerializeField, Min(0)] private int maxKillReward = 500;
 
     private void Awake()
     {
@@ -64,12 +80,39 @@ public class CombatHealth : MonoBehaviour, IDamageable
         // Tambahkan death untuk korban.
         GetComponent<CombatStats>()?.RegisterDeath();
 
-        // Tambahkan kill untuk pembunuh terakhir.
+        // Berikan reward kredit kepada pembunuh (lastAttacker).
         if (lastAttacker != null && lastAttacker != this)
         {
-            lastAttacker
-                .GetComponent<CombatStats>()
-                ?.RegisterKill();
+            // Tambahkan kill statistik.
+            lastAttacker.GetComponent<CombatStats>()?.RegisterKill();
+
+            // Hitung reward random antara min dan max.
+            int reward = UnityEngine.Random.Range(minKillReward, maxKillReward + 1);
+
+            // Berikan kredit sesuai jenis pembunuh (PlayerWallet atau BotBuyWeapon).
+            var playerWallet = lastAttacker.GetComponent<PlayerWallet>();
+            if (playerWallet != null)
+            {
+                playerWallet.AddCredits(reward);
+                Debug.Log($"[KillReward] Pemain mendapatkan +{reward} credits dari kill {gameObject.name}");
+            }
+
+            var botBuyWeapon = lastAttacker.GetComponent<BotBuyWeapon>();
+            if (botBuyWeapon != null)
+            {
+                botBuyWeapon.AddCredits(reward);
+                Debug.Log($"[KillReward] Bot mendapatkan +{reward} credits dari kill {gameObject.name}");
+            }
+
+            // Tampilkan teks kill reward via KillRewardManager.
+            if (KillRewardManager.Instance != null)
+            {
+                KillRewardManager.Instance.ShowReward(reward, transform.position);
+            }
+            else
+            {
+                Debug.LogWarning("[CombatHealth] KillRewardManager.Instance belum ada di scene!");
+            }
         }
 
         lastAttacker = null;

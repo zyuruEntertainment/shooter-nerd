@@ -14,7 +14,7 @@ public class BotController : MonoBehaviour
     private BotHearing hearing;
     private BotPerception perception;
     private BotMovement movement;
-    private BotRangedCombat rangedCombat;
+    private ArcadeWeaponController weaponController;
     private BotJumpController jumpController;
     private BotDashController dashController;
     private BotStateMachine stateMachine;
@@ -50,6 +50,9 @@ public class BotController : MonoBehaviour
 
     private float lastDamageTime = -999f;
     private float lastChargeTime = -999f;
+    private float _lastShootDebugTime = -999f;
+    private float _lastReloadDebugTime = -999f;
+    private float _lastAmmoDebugTime = -999f;
 
     // Reaksi: jeda sebelum bot merespons pemain yang baru terlihat.
     private float reactionTimer;
@@ -103,7 +106,7 @@ public class BotController : MonoBehaviour
         hearing = GetComponent<BotHearing>();
         perception = GetComponent<BotPerception>();
         movement = GetComponent<BotMovement>();
-        rangedCombat = GetComponent<BotRangedCombat>();
+        weaponController = GetComponent<ArcadeWeaponController>();
         jumpController = GetComponent<BotJumpController>();
         dashController = GetComponent<BotDashController>();
         stateMachine = GetComponent<BotStateMachine>();
@@ -228,7 +231,7 @@ public class BotController : MonoBehaviour
             bool canMove = CanMoveInCurrentState();
             BotState st = stateMachine != null ? stateMachine.CurrentState : BotState.Idle;
             // Saat Strafe / Attack / Charge: jangan memutar tubuh ke arah gerak (bot menghadap player).
-            // Rotasi tangani oleh BotRangedCombat (aim lock ke pemain).
+            // Rotasi tangani oleh ArcadeWeaponController (aim lock ke pemain).
             bool rotateTowardMovement = st != BotState.Strafe &&
                                         st != BotState.Attack &&
                                         st != BotState.Charge;
@@ -283,19 +286,63 @@ public class BotController : MonoBehaviour
         // Track dash rising edge.
         TrackDashRisingEdge();
 
-        // BotRangedCombat aktif saat chase/attack/strafe/CHARGE (menembak sambil mendekat player).
+        // ArcadeWeaponController aktif saat chase/attack/strafe/CHARGE (menembak sambil mendekat player).
         // Chase juga menyala agar bot tetap menembak sambil mengejar player.
-        if (rangedCombat != null)
-            rangedCombat.enabled = curState == BotState.Chase || curState == BotState.Attack ||
-                                   curState == BotState.Strafe || curState == BotState.Charge;
+        if (weaponController != null)
+            weaponController.enabled = curState == BotState.Chase || curState == BotState.Attack ||
+                                       curState == BotState.Strafe || curState == BotState.Charge;
+
+        // Bot menembak menggunakan ArcadeWeaponController (sama seperti player).
+        // Hanya tembak jika dalam keadaan bertempur, player terlihat, dan punya senjata.
+        bool inCombatState = curState == BotState.Attack || curState == BotState.Strafe ||
+                             curState == BotState.Charge || curState == BotState.Chase;
+        bool hasTarget = playerTarget != null;
+        bool canSeePlayer = vision != null && vision.CanSeePlayer;
+        bool hasWeapon = weaponController != null && weaponController.HasWeapon;
+        bool hasAmmo = weaponController != null && weaponController.CurrentAmmo > 0;
+        bool hasReserve = weaponController != null && weaponController.ReserveAmmo > 0;
+
+        // Debug ammo status (x/x) saat dalam combat dan punya senjata.
+        if (inCombatState && hasWeapon)
+        {
+            if (Time.time - _lastAmmoDebugTime > 1f)
+            {
+                _lastAmmoDebugTime = Time.time;
+                Debug.Log($"[BotController] {gameObject.name} Ammo: {weaponController.CurrentAmmo}/{weaponController.ReserveAmmo} | HasWeapon={hasWeapon} | CanSeePlayer={canSeePlayer} | State={curState}");
+            }
+        }
+
+        // AUTO-RELOAD: jika dalam combat, punya senjata, ammo habis, tapi masih ada reserve → reload otomatis.
+        if (inCombatState && hasWeapon && !hasAmmo && hasReserve)
+        {
+            Debug.Log($"[BotController] {gameObject.name} >>> AUTO-RELOAD: ammo {weaponController.CurrentAmmo}/{weaponController.ReserveAmmo} → reload...");
+            weaponController.Reload();
+        }
+
+        bool canShoot = inCombatState && hasTarget && canSeePlayer && hasWeapon && hasAmmo;
+
+        if (canShoot)
+        {
+            weaponController.Fire();
+        }
+        else
+        {
+            // Log hanya sekali setiap 2 detik agar tidak spam console.
+            if (Time.time - _lastShootDebugTime > 2f)
+            {
+                _lastShootDebugTime = Time.time;
+                string reasons = "";
+                if (!inCombatState) reasons += "state tidak combat (" + curState + "), ";
+                if (!hasTarget) reasons += "no target, ";
+                if (!canSeePlayer) reasons += "tidak lihat player, ";
+                if (!hasWeapon) reasons += "tidak punya senjata, ";
+                if (!hasAmmo) reasons += "ammo habis, ";
+                Debug.LogWarning($"[BotController] {gameObject.name} tidak menembak: {reasons}");
+            }
+        }
 
         // Feedback animasi tembakan pada sprite.
-        bool isShooting = false;
-        if ((curState == BotState.Attack || curState == BotState.Strafe ||
-             curState == BotState.Charge || curState == BotState.Chase) && playerTarget != null)
-        {
-            isShooting = true; // BotRangedCombat menembak secara independen (termasuk saat chase)
-        }
+        bool isShooting = canShoot;
 
         if (spriteController != null)
         {
@@ -355,7 +402,7 @@ public class BotController : MonoBehaviour
                     movement.SetDestination(perception.TargetPosition);
                 break;
             case BotState.Chase:
-                // Langsung mendekati pemain. BotRangedCombat akan menembak jika sudah dalam attackRange.
+                // Langsung mendekati pemain. ArcadeWeaponController akan menembak jika sudah dalam attackRange.
                 if (playerTarget != null)
                     movement.SetDestination(playerTarget.position);
                 break;
@@ -459,7 +506,7 @@ public class BotController : MonoBehaviour
     /// <summary>
     /// Charge: berlari MENUJU player (menyerang balik) saat baru terkena damage.
     /// Bot lebih lincah: mencoba mendekat cepat, kadang jongkok agar sulit ditembak,
-    /// dan terus menghadap player (BotRangedCombat aim-lock + tembak).
+    /// dan terus menghadap player (ArcadeWeaponController aim-lock + tembak).
     /// </summary>
     private void HandleCharge()
     {

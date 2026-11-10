@@ -72,4 +72,44 @@ public class WeaponShopItemUI : MonoBehaviour
             cardButton.onClick.AddListener(() => onClick?.Invoke());
         }
     }
+
+    /// <summary>Setup panel info untuk pembelian ammo.</summary>
+    public void SetupAmmo(
+        AmmoData ammo,
+        bool canAfford,
+        Action onClick)
+    {
+        if (ammo == null)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
+        if (weaponNameText != null)
+            weaponNameText.text = ammo.AmmoName;
+
+        if (priceText != null)
+            priceText.text = ammo.Price.ToString("N0") + " credits";
+
+        if (statsText != null)
+            statsText.text =
+                $"ammo per beli: {ammo.AmountPerPurchase}\n" +
+                $"kompatibel: {(ammo.CompatibleWeapons.Count == 0 ? "Semua weapon" : ammo.CompatibleWeapons.Count + " weapon")}";
+
+        if (weaponIcon != null)
+        {
+            weaponIcon.sprite = ammo.Icon;
+            weaponIcon.enabled = ammo.Icon != null;
+        }
+
+        if (actionText != null)
+            actionText.text = canAfford ? "BELI AMMO" : "TIDAK CUKUP";
+
+        if (cardButton != null)
+        {
+            cardButton.onClick.RemoveAllListeners();
+            cardButton.interactable = canAfford;
+            cardButton.onClick.AddListener(() => onClick?.Invoke());
+        }
+    }
 }

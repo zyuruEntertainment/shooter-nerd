@@ -14,9 +14,6 @@ public class PlayerSpriteController : MonoBehaviour
     [SerializeField] private PlayerCrouch playerCrouch;
 
     [Header("Bot Override")]
-    [SerializeField] private BotCombat botCombat;
-
-    [Header("Sprites")]
     [SerializeField] private Sprite idleSprite;
     [SerializeField] private Sprite runSprite;
     [SerializeField] private Sprite runSprite2;
@@ -49,7 +46,7 @@ public class PlayerSpriteController : MonoBehaviour
 
     // --- Animation state setters (public API for bot/player) ---
     /// <summary>
-    /// Call to set shooting state. Use botCombat.IsAttackAnimating or player shooting state.
+    /// Call to set shooting state. Use weaponController.HasWeapon or player shooting state.
     /// </summary>
     public void SetShooting(bool value)
     {
@@ -82,9 +79,7 @@ public class PlayerSpriteController : MonoBehaviour
         if (playerCrouch == null)
             playerCrouch = GetComponent<PlayerCrouch>();
 
-        // botCombat is optional - bot may have its own combat component
-        if (botCombat == null)
-            botCombat = GetComponent<BotCombat>();
+        // PlayerSpriteController works for both player and bot.
     }
 
     private void ValidateReferences()
@@ -159,8 +154,7 @@ public class PlayerSpriteController : MonoBehaviour
 
     private Sprite ResolveSprite()
     {
-        bool shooting = isShooting ||
-                        (botCombat != null && botCombat.IsAttackAnimating);
+        bool shooting = isShooting;
 
         // Priority order (highest to lowest):
         // 1. Jump
@@ -252,7 +246,7 @@ public class PlayerSpriteController : MonoBehaviour
 
     /// <summary>
     /// Set the shooting state externally.
-    /// Bot: use BotCombat.IsAttackAnimating value.
+    /// Bot: use ArcadeWeaponController.HasWeapon value.
     /// Player: use your own shooting logic.
     /// </summary>
     public void SetShootingState(bool value)

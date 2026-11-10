@@ -163,7 +163,7 @@ GameObject:
   - component: {fileID: 74464650883802570}
   - component: {fileID: 2455055767807631864}
   - component: {fileID: 6509669723857579626}
-  - component: {fileID: 8458931101553109809}
+  - component: {fileID: 5673621656056494409}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -392,7 +392,6 @@ MonoBehaviour:
   spriteRenderer: {fileID: 8745738698029021654}
   playerPhysics: {fileID: 4812458188236458274}
   playerCrouch: {fileID: 4598995644914552689}
-  botCombat: {fileID: 0}
   idleSprite: {fileID: 21300000, guid: 148906e3a8829c444b00bdb75293bd18, type: 3}
   runSprite: {fileID: 21300000, guid: 09228527dce59ea4b9f362f6c6a02351, type: 3}
   runSprite2: {fileID: 21300000, guid: eadd4fbab325c7543a990bfdbf09fcb7, type: 3}
@@ -463,6 +462,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maxHealth: 100
+  minKillReward: 250
+  maxKillReward: 500
 --- !u!114 &74464650883802570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -475,14 +476,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e81c275b1fb45fb4dbf9f48f8cb1f6ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArcadeWeaponController
-  weaponName: AK-47
-  magazineSize: 6
-  startingReserveAmmo: 114
-  startingMagazineAmmo: 6
-  fireInterval: 0.15
-  damage: 20
-  range: 100
-  shootingAnimationDuration: 0.2
   aimCamera: {fileID: 1882112519966018205}
   crosshair: {fileID: 0}
   ammoText: {fileID: 0}
@@ -520,7 +513,7 @@ MonoBehaviour:
   allWeapons:
   - {fileID: 11400000, guid: 8acfe01801d01364999922a3801b1268, type: 2}
   - {fileID: 11400000, guid: bfd45ca878c0cdc4d9361da3c1ab39a3, type: 2}
---- !u!114 &8458931101553109809
+--- !u!114 &5673621656056494409
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -529,24 +522,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1716946239801373111}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e81c275b1fb45fb4dbf9f48f8cb1f6ae, type: 3}
+  m_Script: {fileID: 11500000, guid: d0a79e7c10d30d54eb18fbf919218f88, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ArcadeWeaponController
-  weaponName: AK-47
-  magazineSize: 6
-  startingReserveAmmo: 114
-  startingMagazineAmmo: 6
-  fireInterval: 0.15
-  damage: 20
-  range: 100
-  shootingAnimationDuration: 0.2
-  aimCamera: {fileID: 1882112519966018205}
-  crosshair: {fileID: 0}
-  ammoText: {fileID: 0}
-  spriteController: {fileID: 4700088721221723930}
-  hitboxMask:
-    serializedVersion: 2
-    m_Bits: 8
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerWallet
+  startingCredits: 2500
 --- !u!1 &8227717841249274182
 GameObject:
   m_ObjectHideFlags: 0

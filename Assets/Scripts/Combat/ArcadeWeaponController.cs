@@ -6,17 +6,13 @@ using UnityEngine.UI;
 
 public class ArcadeWeaponController : MonoBehaviour
 {
-    [Header("Weapon Defaults (used before WeaponData is applied)")]
-    [SerializeField] private string weaponName = "AK-47";
-    [SerializeField, Min(1)] private int magazineSize = 6;
-    [SerializeField, Min(0)] private int startingReserveAmmo = 114;
-    [SerializeField, Min(0)] private int startingMagazineAmmo = 6;
+    private string weaponName = "AK-47";
+    private int magazineSize = 6;
 
-    [Header("Game Balance")]
-    [SerializeField, Min(0.01f)] private float fireInterval = 0.15f;
-    [SerializeField, Min(0.1f)] private float damage = 20f;
-    [SerializeField, Min(1f)] private float range = 100f;
-    [SerializeField, Min(0.01f)] private float shootingAnimationDuration = 0.2f;
+    private float fireInterval = 0.15f;
+    private float damage = 20f;
+    private float range = 100f;
+    private float shootingAnimationDuration = 0.2f;
 
     [Header("References")]
     [SerializeField] private Camera aimCamera;
@@ -39,6 +35,8 @@ public class ArcadeWeaponController : MonoBehaviour
     public string WeaponName => weaponName;
     public int CurrentAmmo => currentAmmo;
     public int ReserveAmmo => reserveAmmo;
+    /// <summary>Apakah senjata sedang aktif (telah diterapkan WeaponData).</summary>
+    public bool HasWeapon { get; private set; }
 
     /// <summary>
     /// Reset the fire cooldown timer. Useful when switching weapons.
@@ -50,8 +48,9 @@ public class ArcadeWeaponController : MonoBehaviour
 
     private void Awake()
     {
-        currentAmmo = Mathf.Clamp(startingMagazineAmmo, 0, magazineSize);
-        reserveAmmo = startingReserveAmmo;
+        // Mulai tanpa senjata default agar inventory awal benar-benar kosong.
+        // Senjata hanya akan aktif setelah WeaponManager memanggil ApplyWeaponData.
+        ClearWeapon();
 
         if (aimCamera == null)
             aimCamera = Camera.main;
@@ -62,7 +61,23 @@ public class ArcadeWeaponController : MonoBehaviour
         KeepCrosshairCentered();
 
         if (aimCamera == null)
-            Debug.LogError("Weapon: Camera belum dipasang.", this);
+            Debug.LogError("Weapon: Kamera belum dipasang.", this);
+
+        UpdateAmmoUI();
+
+        // Sync ammo di semua ArcadeWeaponController pada GameObject yang sama
+        // (karena terkadang ada duplikasi di prefab Player).
+        SyncAmmoWithSiblings();
+    }
+
+    /// <summary>Kosongkan senjata saat ini (digunakan saat inventory kosong).</summary>
+    public void ClearWeapon()
+    {
+        weaponName = "None";
+        currentAmmo = 0;
+        reserveAmmo = 0;
+        nextFireTime = 0f;
+        HasWeapon = false;
 
         UpdateAmmoUI();
     }
@@ -70,7 +85,10 @@ public class ArcadeWeaponController : MonoBehaviour
     public void ApplyWeaponData(WeaponData data)
     {
         if (data == null)
+        {
+            ClearWeapon();
             return;
+        }
 
         weaponName = data.WeaponName;
         magazineSize = data.MagazineSize;
@@ -79,11 +97,67 @@ public class ArcadeWeaponController : MonoBehaviour
         range = data.Range;
         shootingAnimationDuration = data.ShootingAnimationDuration;
 
-        currentAmmo = Mathf.Clamp(data.StartingMagazineAmmo, 0, magazineSize);
-        reserveAmmo = data.StartingReserveAmmo;
+        currentAmmo = Mathf.Clamp(data.StartingMagazineAmmo, 1, magazineSize);
+
+        // Hanya set reserveAmmo jika masih 0 (belum pernah diisi).
+        // Ini mencegah ammo yang sudah dibeli hilang saat ganti senjata/equip ulang.
+        if (reserveAmmo <= 0)
+        {
+            reserveAmmo = data.StartingReserveAmmo;
+        }
+
         nextFireTime = 0f;
+        HasWeapon = true;
 
         UpdateAmmoUI();
+
+        // Sync ke semua controller siblings.
+        SyncAmmoWithSiblings();
+
+        Debug.Log($"[ArcadeWeaponController] {gameObject.name} ApplyWeaponData {weaponName}. magazine={currentAmmo}, reserve={reserveAmmo}");
+    }
+
+    /// <summary>Tambah reserve ammo (dibeli di shop). Aplikasikan ke semua controller pada GameObject.</summary>
+    public void AddAmmo(int amount)
+    {
+        if (amount <= 0)
+            return;
+
+        reserveAmmo += amount;
+        UpdateAmmoUI();
+
+        // Sync ke semua controller siblings agar ammo konsisten.
+        SyncAmmoWithSiblings();
+
+        Debug.Log($"[ArcadeWeaponController] {gameObject.name} AddAmmo +{amount}. Reserve={reserveAmmo}");
+    }
+
+    /// <summary>Set jumlah ammo (digunakan untuk memastikan bot bisa menembak setelah membeli/ganti senjata).</summary>
+    public void SetAmmo(int amount)
+    {
+        currentAmmo = Mathf.Clamp(amount, 0, magazineSize);
+        UpdateAmmoUI();
+        SyncAmmoWithSiblings();
+    }
+
+    /// <summary>Sinkronkan ammo dengan semua ArcadeWeaponController lain pada GameObject yang sama.</summary>
+    private void SyncAmmoWithSiblings()
+    {
+        var controllers = GetComponents<ArcadeWeaponController>();
+        if (controllers.Length <= 1)
+            return;
+
+        foreach (var ctrl in controllers)
+        {
+            if (ctrl != this)
+            {
+                ctrl.reserveAmmo = this.reserveAmmo;
+                ctrl.currentAmmo = this.currentAmmo;
+                ctrl.HasWeapon = this.HasWeapon;
+                ctrl.weaponName = this.weaponName;
+                ctrl.UpdateAmmoUI();
+            }
+        }
     }
 
     private void Update()
@@ -131,8 +205,12 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Fire()
     {
-        if (currentAmmo <= 0 || aimCamera == null)
+        if (!HasWeapon || currentAmmo <= 0 || aimCamera == null)
+        {
+            if (!HasWeapon && aimCamera != null)
+                Debug.LogWarning($"[ArcadeWeaponController] {gameObject.name} Fire dibatalkan: HasWeapon=false (belum beli senjata)");
             return;
+        }
 
         float fireSensitivity = SensitivitySettings.Instance != null
             ? SensitivitySettings.Instance.FireSensitivity
@@ -207,6 +285,7 @@ public class ArcadeWeaponController : MonoBehaviour
         reserveAmmo -= transferred;
 
         UpdateAmmoUI();
+        SyncAmmoWithSiblings();
     }
 
     private void UpdateAmmoUI()
