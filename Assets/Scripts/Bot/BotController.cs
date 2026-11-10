@@ -349,6 +349,25 @@ public class BotController : MonoBehaviour
             spriteController.SetShootingState(isShooting);
             spriteController.SetCrouchState(isCrouching); // sinkronkan animasi jongkok ke sprite
         }
+
+        // Kunci pandangan bot ke player saat dalam keadaan bertempur (Chase/Attack/Strafe/Charge).
+        // Bot menghadap player agar senjata (ArcadeWeaponController) menembak dengan benar.
+        if ((curState == BotState.Chase || curState == BotState.Attack ||
+             curState == BotState.Strafe || curState == BotState.Charge) &&
+            playerTarget != null)
+        {
+            Vector3 toPlayer = playerTarget.position - transform.position;
+            toPlayer.y = 0f;
+            if (toPlayer.sqrMagnitude > 0.0001f)
+            {
+                float rotSpeed = (settings != null ? settings.RotationSpeed : 720f) *
+                                 (curState == BotState.Charge || curState == BotState.Strafe
+                                     ? settings.AgileRotationMultiplier : 1f);
+                Quaternion targetRot = Quaternion.LookRotation(toPlayer.normalized, Vector3.up);
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation, targetRot, rotSpeed * Time.deltaTime);
+            }
+        }
     }
 
     private void TrackPlayerVelocity(float dt)

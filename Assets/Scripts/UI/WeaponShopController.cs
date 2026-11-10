@@ -57,10 +57,16 @@ public class WeaponShopController : MonoBehaviour
         if (wallet == null)
             wallet = PlayerWallet.Instance;
 
-        // Ambil ArcadeWeaponController dari WeaponManager (yang aktif dan digunakan pemain),
+        // SELALU ambil ArcadeWeaponController dari WeaponManager (yang aktif dan digunakan pemain),
         // bukan mencari sendiri via tag yang bisa dapat controller yang salah.
-        if (playerWeaponController == null && WeaponManager.Instance != null)
+        if (WeaponManager.Instance != null && WeaponManager.Instance.ActiveWeaponController != null)
+        {
             playerWeaponController = WeaponManager.Instance.ActiveWeaponController;
+        }
+        else
+        {
+            Debug.LogWarning("[WeaponShopController] WeaponManager.Instance atau ActiveWeaponController null di Awake!");
+        }
 
         itemPanel = GetComponent<WeaponShopItemUI>();
 
@@ -80,9 +86,16 @@ public class WeaponShopController : MonoBehaviour
         weaponManager = WeaponManager.Instance;
         wallet = PlayerWallet.Instance;
 
-        // Pastikan playerWeaponController selalu dari WeaponManager (controller aktif pemain).
-        if (playerWeaponController == null && WeaponManager.Instance != null)
+        // SELALU ambil playerWeaponController dari WeaponManager (controller aktif pemain).
+        // Jangan pakai referensi Inspector yang bisa menunjuk ke controller yang salah.
+        if (WeaponManager.Instance != null && WeaponManager.Instance.ActiveWeaponController != null)
+        {
             playerWeaponController = WeaponManager.Instance.ActiveWeaponController;
+        }
+        else
+        {
+            Debug.LogWarning("[WeaponShopController] WeaponManager.Instance atau ActiveWeaponController null!");
+        }
 
         if (weaponManager == null || wallet == null || itemPanel == null)
         {

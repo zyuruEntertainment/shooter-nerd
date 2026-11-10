@@ -291,7 +291,14 @@ public class ArcadeWeaponController : MonoBehaviour
     private void UpdateAmmoUI()
     {
         if (ammoText != null)
+        {
             ammoText.text = $"{currentAmmo}/{reserveAmmo}";
+            Debug.Log($"[ArcadeWeaponController] {gameObject.name} UpdateAmmoUI: {currentAmmo}/{reserveAmmo}");
+        }
+        else
+        {
+            Debug.LogWarning($"[ArcadeWeaponController] {gameObject.name} UpdateAmmoUI: ammoText is NULL! Assign TMP_Text di Inspector.");
+        }
     }
 
     private void PlayShootingAnimation()
