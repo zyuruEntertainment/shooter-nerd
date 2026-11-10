@@ -360,7 +360,9 @@ public class WeaponShopController : MonoBehaviour
         wallet.TrySpend(selectedAmmo.Price);
 
         // Tambah ammo ke senjata yang sedang dipakai.
+        int reserveBefore = playerWeaponController.ReserveAmmo;
         playerWeaponController.AddAmmo(selectedAmmo.AmountPerPurchase);
+        int reserveAfter = playerWeaponController.ReserveAmmo;
 
         if (statusText != null)
             statusText.text = "Berbeli ammo " + selectedAmmo.AmmoName + " +" + selectedAmmo.AmountPerPurchase;
@@ -368,15 +370,26 @@ public class WeaponShopController : MonoBehaviour
         UpdateCredits(wallet.Credits);
         UpdateAmmoStatus();
 
-        Debug.Log($"[WeaponShopController] Beli ammo {selectedAmmo.AmmoName} +{selectedAmmo.AmountPerPurchase} untuk {equipped.WeaponName}. Sisa kredit {wallet.Credits}");
+        Debug.Log($"[WeaponShopController] Beli ammo {selectedAmmo.AmmoName} +{selectedAmmo.AmountPerPurchase} untuk {equipped.WeaponName}. Reserve {reserveBefore}->{reserveAfter}. Sisa kredit {wallet.Credits}");
     }
 
     private void UpdateAmmoStatus()
     {
+        if (playerWeaponController == null)
+        {
+            // Coba ambil dari WeaponManager lagi.
+            if (WeaponManager.Instance != null)
+                playerWeaponController = WeaponManager.Instance.ActiveWeaponController;
+        }
+
         if (ammoStatusText == null || playerWeaponController == null)
+        {
+            Debug.LogWarning($"[WeaponShopController] UpdateAmmoStatus gagal: ammoStatusText={ammoStatusText != null}, playerWeaponController={playerWeaponController != null}");
             return;
+        }
 
         ammoStatusText.text = playerWeaponController.CurrentAmmo + "/" + playerWeaponController.ReserveAmmo;
+        Debug.Log($"[WeaponShopController] UpdateAmmoStatus: {playerWeaponController.CurrentAmmo}/{playerWeaponController.ReserveAmmo}");
     }
 
     private void UpdateCredits(int amount)
