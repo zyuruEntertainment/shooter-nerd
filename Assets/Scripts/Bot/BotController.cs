@@ -59,6 +59,18 @@ public class BotController : MonoBehaviour
     private float requiredReactionDelay;
     private bool wasVisible;
 
+    // === TRACKING DELAY (aim human-like) ===
+    // Posisi aim yang diikuti bot (dengan lag/smoothing).
+    private Vector3 trackedAimPosition;
+    private bool hasTrackedAimPosition;
+    // Timer reaksi sebelum bot mulai mengikuti pergerakan player.
+    private float aimReactionTimer;
+    // Timer untuk delay saat player berpindah arah tiba-tiba.
+    private float aimDirectionChangeTimer;
+    // Arah player sebelumnya (untuk deteksi perubahan arah mendadak).
+    private Vector3 lastPlayerVelocity;
+    private bool hasLastPlayerVelocity;
+
     public bool HasBeenDamagedRecently =>
         settings != null && Time.time - lastDamageTime <= settings.DamageMemoryDuration;
 
@@ -155,6 +167,13 @@ public class BotController : MonoBehaviour
         isCrouching = false;
         crouchTimer = 0f;
         crouchCooldownTimer = 0f;
+
+        // Inisialisasi tracking delay.
+        hasTrackedAimPosition = false;
+        trackedAimPosition = playerTarget != null ? playerTarget.position : transform.position;
+        aimReactionTimer = 0f;
+        aimDirectionChangeTimer = 0f;
+        hasLastPlayerVelocity = false;
     }
 
     private void OnBotTakeDamage(float amount)
@@ -231,7 +250,7 @@ public class BotController : MonoBehaviour
             bool canMove = CanMoveInCurrentState();
             BotState st = stateMachine != null ? stateMachine.CurrentState : BotState.Idle;
             // Saat Strafe / Attack / Charge: jangan memutar tubuh ke arah gerak (bot menghadap player).
-            // Rotasi tangani oleh ArcadeWeaponController (aim lock ke pemain).
+            // Rotasi tangani oleh aim lock ke pemain.
             bool rotateTowardMovement = st != BotState.Strafe &&
                                         st != BotState.Attack &&
                                         st != BotState.Charge;
@@ -283,10 +302,9 @@ public class BotController : MonoBehaviour
         // Crouch secara acak saat charge (membuat bot lebih sulit ditembak).
         UpdateCrouch(dt);
 
-        // Track dash rising edge.
-        TrackDashRisingEdge();
+        // Track dash rising edge (no-op).
 
-        // ArcadeWeaponController aktif saat chase/attack/strafe/CHARGE (menembak sambil mendekat player).
+        // BotRangedCombat aktif saat chase/attack/strafe/CHARGE (menembak sambil mendekat player).
         // Chase juga menyala agar bot tetap menembak sambil mengejar player.
         if (weaponController != null)
             weaponController.enabled = curState == BotState.Chase || curState == BotState.Attack ||
@@ -301,16 +319,6 @@ public class BotController : MonoBehaviour
         bool hasWeapon = weaponController != null && weaponController.HasWeapon;
         bool hasAmmo = weaponController != null && weaponController.CurrentAmmo > 0;
         bool hasReserve = weaponController != null && weaponController.ReserveAmmo > 0;
-
-        // Debug ammo status (x/x) saat dalam combat dan punya senjata.
-        if (inCombatState && hasWeapon)
-        {
-            if (Time.time - _lastAmmoDebugTime > 1f)
-            {
-                _lastAmmoDebugTime = Time.time;
-                Debug.Log($"[BotController] {gameObject.name} Ammo: {weaponController.CurrentAmmo}/{weaponController.ReserveAmmo} | HasWeapon={hasWeapon} | CanSeePlayer={canSeePlayer} | State={curState}");
-            }
-        }
 
         // AUTO-RELOAD: jika dalam combat, punya senjata, ammo habis, tapi masih ada reserve → reload otomatis.
         if (inCombatState && hasWeapon && !hasAmmo && hasReserve)
@@ -350,24 +358,104 @@ public class BotController : MonoBehaviour
             spriteController.SetCrouchState(isCrouching); // sinkronkan animasi jongkok ke sprite
         }
 
-        // Kunci pandangan bot ke player saat dalam keadaan bertempur (Chase/Attack/Strafe/Charge).
-        // Bot menghadap player agar senjata (ArcadeWeaponController) menembak dengan benar.
+        // === AIM LOCK KE PLAYER DENGAN TRACKING DELAY (human-like) ===
+        // Bot tidak langsung menghadap player setiap frame, tapi menggunakan
+        // posisi aim yang diikuti dengan smoothing dan reaction delay.
         if ((curState == BotState.Chase || curState == BotState.Attack ||
              curState == BotState.Strafe || curState == BotState.Charge) &&
             playerTarget != null)
         {
-            Vector3 toPlayer = playerTarget.position - transform.position;
-            toPlayer.y = 0f;
-            if (toPlayer.sqrMagnitude > 0.0001f)
+            UpdateTrackedAimPosition(dt, curState);
+            ApplyTrackedAimRotation(dt, curState);
+        }
+    }
+
+    // === TRACKING DELAY METHODS ===
+
+    /// <summary>
+    /// Update posisi aim yang diikuti bot dengan smoothing dan reaction delay.
+    /// Posisi aim bergerak bertahap menuju posisi player, tidak langsung.
+    /// </summary>
+    private void UpdateTrackedAimPosition(float dt, BotState curState)
+    {
+        if (playerTarget == null) return;
+
+        float reactionDelay = settings != null ? settings.AimReactionDelay : 0.15f;
+        float aimSmoothing = settings != null ? settings.AimSmoothing : 0.5f;
+        float followSpeed = settings != null ? settings.AimPositionFollowSpeed : 8f;
+
+        // Deteksi perubahan arah player secara mendadak.
+        Vector3 currentVel = playerVelocity;
+        bool directionChanged = false;
+        if (hasLastPlayerVelocity)
+        {
+            float velDelta = Vector3.Distance(currentVel, lastPlayerVelocity);
+            if (velDelta > 3f) // player berpindah arah dengan cepat
             {
-                float rotSpeed = (settings != null ? settings.RotationSpeed : 720f) *
-                                 (curState == BotState.Charge || curState == BotState.Strafe
-                                     ? settings.AgileRotationMultiplier : 1f);
-                Quaternion targetRot = Quaternion.LookRotation(toPlayer.normalized, Vector3.up);
-                transform.rotation = Quaternion.RotateTowards(
-                    transform.rotation, targetRot, rotSpeed * Time.deltaTime);
+                directionChanged = true;
             }
         }
+        lastPlayerVelocity = currentVel;
+        hasLastPlayerVelocity = true;
+
+        // Saat player berpindah arah mendadak, tambahkan delay sebelum bot mengikuti.
+        if (directionChanged && !hasTrackedAimPosition == false)
+        {
+            aimDirectionChangeTimer = reactionDelay * 0.5f;
+        }
+
+        // Kurangi timer delay.
+        if (aimDirectionChangeTimer > 0f)
+        {
+            aimDirectionChangeTimer -= dt;
+        }
+
+        // Reaksi delay: bot tidak langsung mulai mengikuti pergerakan player.
+        if (!hasTrackedAimPosition)
+        {
+            trackedAimPosition = playerTarget.position;
+            hasTrackedAimPosition = true;
+            aimReactionTimer = reactionDelay;
+        }
+
+        // Saat player baru terlihat atau baru bergerak, tambahkan reaksi delay.
+        if (aimReactionTimer > 0f)
+        {
+            aimReactionTimer -= dt;
+            // Selama reaksi delay, posisi aim tetap di posisi sebelumnya (tidak mengikuti).
+            return;
+        }
+
+        // Jika dalam delay perubahan arah, posisi aim tetap (tidak mengikuti).
+        if (aimDirectionChangeTimer > 0f)
+            return;
+
+        // Smooth follow: posisi aim bergerak bertahap menuju posisi player.
+        // Gunakan Lerp dengan smoothing factor untuk efek lag.
+        Vector3 targetPos = playerTarget.position;
+        float t = 1f - Mathf.Pow(aimSmoothing, dt * followSpeed);
+        trackedAimPosition = Vector3.Lerp(trackedAimPosition, targetPos, t);
+    }
+
+    /// <summary>
+    /// Terapkan rotasi bot berdasarkan posisi aim yang diikuti (dengan smoothing).
+    /// </summary>
+    private void ApplyTrackedAimRotation(float dt, BotState curState)
+    {
+        if (playerTarget == null) return;
+
+        Vector3 toTracked = trackedAimPosition - transform.position;
+        toTracked.y = 0f;
+        if (toTracked.sqrMagnitude < 0.0001f) return;
+
+        float trackSpeed = settings != null ? settings.AimTrackingSpeed : 360f;
+        float rotSpeed = trackSpeed * (curState == BotState.Charge || curState == BotState.Strafe
+            ? (settings != null ? settings.AgileRotationMultiplier : 1.6f) : 1f);
+
+        // Smooth rotation: gunakan RotateTowards dengan kecepatan terbatas.
+        Quaternion targetRot = Quaternion.LookRotation(toTracked.normalized, Vector3.up);
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation, targetRot, rotSpeed * dt);
     }
 
     private void TrackPlayerVelocity(float dt)
@@ -386,20 +474,6 @@ public class BotController : MonoBehaviour
         Vector3 cur = playerTarget.position;
         playerVelocity = (cur - lastPlayerPosition) / Mathf.Max(dt, 0.0001f);
         lastPlayerPosition = cur;
-    }
-
-    private bool prevDashing;
-
-    private void TrackDashRisingEdge()
-    {
-        var pd = GetComponent<PlayerDash>();
-        if (pd == null) return;
-        bool now = pd.IsDashing;
-        if (now && !prevDashing)
-        {
-            justDashed = true;
-        }
-        prevDashing = now;
     }
 
     private void UpdateMovementDestination()
@@ -525,7 +599,7 @@ public class BotController : MonoBehaviour
     /// <summary>
     /// Charge: berlari MENUJU player (menyerang balik) saat baru terkena damage.
     /// Bot lebih lincah: mencoba mendekat cepat, kadang jongkok agar sulit ditembak,
-    /// dan terus menghadap player (ArcadeWeaponController aim-lock + tembak).
+    /// dan terus menghadap player (aim-lock + tembak).
     /// </summary>
     private void HandleCharge()
     {

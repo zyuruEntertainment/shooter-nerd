@@ -137,6 +137,19 @@ public class BotSettings : MonoBehaviour
     [Tooltip("Seconds between picking a new wander point.")]
     [SerializeField, Min(0.5f)] private float wanderInterval = 4f;
 
+    [Header("Tracking (bot aim delay - natural human-like aiming)")]
+    [Tooltip("Kecepatan rotasi aim (derajat/detik). Lebih rendah = bot lebih lambat mengikuti pergerakan player.")]
+    [SerializeField, Min(0f)] private float aimTrackingSpeed = 360f;
+
+    [Tooltip("Delay reaksi sebelum bot mulai mengikuti pergerakan player (detik). Membuat bot tidak langsung mengarah ke posisi terbaru.")]
+    [SerializeField, Min(0f)] private float aimReactionDelay = 0.15f;
+
+    [Tooltip("Faktor smoothing posisi aim (0 = langsung, 1 = sangat lambat). Bot mengikuti posisi player dengan lag.")]
+    [SerializeField, Range(0f, 1f)] private float aimSmoothing = 0.5f;
+
+    [Tooltip("Kecepatan pergerakan posisi aim yang diikuti bot (units/detik). Lebih rendah = bot lebih lambat menyesuaikan.")]
+    [SerializeField, Min(0f)] private float aimPositionFollowSpeed = 8f;
+
     [Header("Combat Balance (smarter / harder)")]
     [Tooltip("Minimum seconds between strafe direction changes (unpredictable).")]
     [SerializeField, Min(0.1f)] private float strafeMinInterval = 0.8f;
@@ -195,4 +208,10 @@ public class BotSettings : MonoBehaviour
     public float StrafeMaxInterval => strafeMaxInterval;
     public float LeadTime => leadTime;
     public float CombatJumpChance => combatJumpChance;
+
+    // Tracking (bot aim delay - natural human-like aiming).
+    public float AimTrackingSpeed => aimTrackingSpeed;
+    public float AimReactionDelay => aimReactionDelay;
+    public float AimSmoothing => aimSmoothing;
+    public float AimPositionFollowSpeed => aimPositionFollowSpeed;
 }

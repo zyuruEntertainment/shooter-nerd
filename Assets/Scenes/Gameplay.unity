@@ -799,8 +799,8 @@ MonoBehaviour:
   memoryDuration: 3
   hearingRange: 25
   walkSpeed: 3
-  chaseSpeed: 5.5
-  patrolSpeed: 2.5
+  chaseSpeed: 10
+  patrolSpeed: 3
   acceleration: 20
   deceleration: 25
   rotationSpeed: 720
@@ -813,15 +813,15 @@ MonoBehaviour:
   chargeDuration: 1.5
   damageMemoryDuration: 10
   chargeCooldown: 4
-  crouchChance: 0.35
-  crouchDuration: 0.8
+  crouchChance: 0.84
+  crouchDuration: 1
   crouchCooldown: 1.2
   agileRotationMultiplier: 1.6
   chargeJumpChance: 0.6
   jumpTriggerDistance: 4
   jumpCooldown: 2
   jumpProbability: 0.4
-  closeRangeThreshold: 2
+  closeRangeThreshold: 10
   dashTriggerDuration: 0.5
   stateEvaluationInterval: 0.15
   minStateDuration: 0.4
@@ -832,6 +832,10 @@ MonoBehaviour:
   reactionTimeMax: 0.25
   wanderRadius: 6
   wanderInterval: 4
+  aimTrackingSpeed: 360
+  aimReactionDelay: 0.5
+  aimSmoothing: 0.5
+  aimPositionFollowSpeed: 8
   strafeMinInterval: 0.8
   strafeMaxInterval: 2
   leadTime: 0.35
@@ -1294,12 +1298,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 2340, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -2627,7 +2631,7 @@ Transform:
   m_GameObject: {fileID: 1719682746}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4176,6 +4180,10 @@ PrefabInstance:
       propertyPath: crosshair
       value: 
       objectReference: {fileID: 9218816580816052320}
+    - target: {fileID: 1096672562080790846, guid: be53475310485ba4b803e84548afc7b2, type: 3}
+      propertyPath: moveSpeed
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 1096672562080790846, guid: be53475310485ba4b803e84548afc7b2, type: 3}
       propertyPath: mobileInput
       value: 
