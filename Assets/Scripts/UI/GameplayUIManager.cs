@@ -51,8 +51,7 @@ public class GameplayUIManager : MonoBehaviour
         if (keyboard.bKey.wasPressedThisFrame)
             OpenShop();
 
-        if (keyboard.escapeKey.wasPressedThisFrame)
-            CloseShop();
+        // ESC ditangani oleh PauseManager (penanganan utama input pause/shop).
     }
 
     public void OpenShop()

@@ -360,7 +360,7 @@ MonoBehaviour:
   airDeceleration: 0.5
   cameraTransform: {fileID: 3033952821665998933}
   pcInput: {fileID: 8354007086462412972}
-  mobileInput: {fileID: 0}
+  mobileInput: {fileID: 5564176965242791306, guid: 268c7a17b010b2346b313b1fbe07a648, type: 3}
 --- !u!114 &716338678376648417
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -477,8 +477,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArcadeWeaponController
   aimCamera: {fileID: 1882112519966018205}
-  crosshair: {fileID: 0}
-  ammoText: {fileID: 0}
+  crosshair: {fileID: 2557727230458672241, guid: a9086837066956a4585627cdb807194f, type: 3}
+  ammoText: {fileID: 5635608495724780145, guid: 8b75eaea2b762e14ca6df1a4adcf336c, type: 3}
   spriteController: {fileID: 4700088721221723930}
   hitboxMask:
     serializedVersion: 2

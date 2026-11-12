@@ -2,16 +2,13 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Mengelola pause game: menampilkan canvas pause, menghentikan waktu (Time.timeScale),
+/// Mengelola pause game: menampilkan pause UI (prefab), menghentikan waktu (Time.timeScale),
 /// dan mengembalikan kondisi kursor. Singleton agar mudah diakses dari UI/tombol.
+/// Pola instantiation mirip dengan GameplayUIManager.OpenShop().
 /// </summary>
 public class PauseManager : MonoBehaviour
 {
     public static PauseManager Instance { get; private set; }
-
-    [Header("Pause UI - Scene")]
-    [Tooltip("Canvas/panel yang sudah ada di scene (opsional).")]
-    [SerializeField] private GameObject pauseCanvas;
 
     [Header("Pause UI - Prefab")]
     [Tooltip("Prefab pause yang akan di-instantiate saat pause (seperti shop).")]
@@ -43,9 +40,6 @@ public class PauseManager : MonoBehaviour
         }
 
         Instance = this;
-
-        if (pauseCanvas != null)
-            pauseCanvas.SetActive(false);
     }
 
     private void Update()
@@ -54,13 +48,19 @@ public class PauseManager : MonoBehaviour
         if (keyboard == null)
             return;
 
-        // Escape: jika shop terbuka, biarkan GameplayUIManager yang menutup shop.
         if (keyboard.escapeKey.wasPressedThisFrame)
         {
+            // Jika shop terbuka, tutup shop terlebih dahulu dan hentikan pemrosesan ESC pada frame ini.
             if (GameplayUIManager.Instance != null && GameplayUIManager.Instance.IsShopOpen)
+            {
+                GameplayUIManager.Instance.CloseShop();
                 return;
+            }
 
-            TogglePause();
+            if (isPaused)
+                Resume();
+            else
+                Pause();
         }
     }
 
@@ -73,32 +73,21 @@ public class PauseManager : MonoBehaviour
             Pause();
     }
 
-    /// <summary>Pause game dan tampilkan canvas pause.</summary>
+    /// <summary>Pause game dan tampilkan pause UI.</summary>
     public void Pause()
     {
         if (isPaused)
             return;
 
+        if (pausePrefab == null)
+        {
+            Debug.LogError("Pause Prefab belum diatur!");
+            return;
+        }
+
         isPaused = true;
 
-        // Tampilkan pause: gunakan canvas scene jika ada, kalau tidak instantiate prefab.
-        if (pauseCanvas != null)
-        {
-            pauseCanvas.SetActive(true);
-        }
-        else if (pausePrefab != null)
-        {
-            if (pauseInstance == null)
-                pauseInstance = Instantiate(pausePrefab, pauseParent, false);
-            if (pauseInstance != null)
-                pauseInstance.SetActive(true);
-        }
-
-        if (hideGameplayUIWhilePaused && gameplayUIRoot != null)
-            gameplayUIRoot.SetActive(false);
-
-        // Simpan kondisi sebelumnya.
-        previousTimeScale = Time.timeScale;
+        // Simpan kondisi cursor sebelumnya.
         previousCursorLockState = Cursor.lockState;
         previousCursorVisible = Cursor.visible;
 
@@ -106,30 +95,39 @@ public class PauseManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
+        // Simpan kondisi waktu sebelumnya dan hentikan waktu.
+        previousTimeScale = Time.timeScale;
         if (pauseTimeScale)
             Time.timeScale = 0f;
+
+        // Sembunyikan gameplay UI jika konfigurasi mengharuskannya.
+        if (hideGameplayUIWhilePaused && gameplayUIRoot != null)
+            gameplayUIRoot.SetActive(false);
+
+        // Instantiate pause prefab ke parent (mirip OpenShop).
+        pauseInstance = Instantiate(pausePrefab, pauseParent, false);
+        if (pauseInstance != null)
+            pauseInstance.SetActive(true);
 
         OnPause?.Invoke();
     }
 
-    /// <summary>Lanjutkan game dan sembunyikan canvas pause.</summary>
+    /// <summary>Lanjutkan game dan sembunyikan pause UI.</summary>
     public void Resume()
     {
         if (!isPaused)
             return;
 
-        isPaused = false;
-
-        if (pauseCanvas != null)
-        {
-            pauseCanvas.SetActive(false);
-        }
-        else if (pauseInstance != null)
+        // Hancurkan instance pause UI (mencegah instance ganda).
+        if (pauseInstance != null)
         {
             Destroy(pauseInstance);
             pauseInstance = null;
         }
 
+        isPaused = false;
+
+        // Pulihkan gameplay UI.
         if (hideGameplayUIWhilePaused && gameplayUIRoot != null)
             gameplayUIRoot.SetActive(true);
 
@@ -137,6 +135,7 @@ public class PauseManager : MonoBehaviour
         Cursor.lockState = previousCursorLockState;
         Cursor.visible = previousCursorVisible;
 
+        // Kembalikan Time.timeScale.
         if (pauseTimeScale)
             Time.timeScale = previousTimeScale;
 
