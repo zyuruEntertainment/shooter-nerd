@@ -162,6 +162,10 @@ public class ArcadeWeaponController : MonoBehaviour
 
     private void Update()
     {
+        // Jangan proses tembak/reload saat game di-pause.
+        if (PauseManager.Instance != null && PauseManager.Instance.IsPaused)
+            return;
+
         KeepCrosshairCentered();
         UpdateCrosshair();
 

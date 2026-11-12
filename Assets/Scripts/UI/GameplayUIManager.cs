@@ -20,6 +20,9 @@ public class GameplayUIManager : MonoBehaviour
 
     private GameObject shopInstance;
     private bool shopIsOpen;
+
+    /// <summary>Apakah shop sedang terbuka.</summary>
+    public bool IsShopOpen => shopIsOpen;
     private float previousTimeScale = 1f;
     private CursorLockMode previousCursorLockState;
     private bool previousCursorVisible;
