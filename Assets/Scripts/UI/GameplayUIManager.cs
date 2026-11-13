@@ -108,7 +108,7 @@ public class GameplayUIManager : MonoBehaviour
             Time.timeScale = previousTimeScale;
     }
 
-    private void SetGameplayUI(bool state)
+    public void SetGameplayUI(bool state)
     {
         foreach (GameObject ui in gameplayUI)
         {

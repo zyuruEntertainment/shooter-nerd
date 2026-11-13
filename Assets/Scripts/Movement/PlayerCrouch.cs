@@ -87,7 +87,7 @@ public class PlayerCrouch : MonoBehaviour
                 originalCapsuleCenter + Vector3.down * (heightReduction * 0.5f);
 
             sphereCollider.center =
-                originalSphereCenter + new Vector3(0f, -1f, 0f);
+                originalSphereCenter + Vector3.down * (heightReduction * 0.5f);
 
             if (characterController != null)
             {

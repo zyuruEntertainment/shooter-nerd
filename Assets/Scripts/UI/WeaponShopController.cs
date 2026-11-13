@@ -334,6 +334,9 @@ public class WeaponShopController : MonoBehaviour
         if (selectedWeapon == null || weaponManager == null)
             return;
 
+        if (wallet == null)
+            wallet = PlayerWallet.Instance;
+
         bool success = weaponManager.TryPurchaseOrEquip(selectedWeapon, out string message);
 
         if (statusText != null)

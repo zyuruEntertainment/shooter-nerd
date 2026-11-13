@@ -20,6 +20,16 @@ public class ArcadeWeaponController : MonoBehaviour
     [SerializeField] private TMP_Text ammoText;
     [SerializeField] private PlayerSpriteController spriteController;
 
+    [Header("Input")]
+    [Tooltip("Jika true, senjata otomatis menembak/reload dari input mouse (untuk player). Bot harus false agar tidak ikut input global.")]
+    [SerializeField] private bool autoFireFromInput = true;
+
+    public bool AutoFireFromInput
+    {
+        get => autoFireFromInput;
+        set => autoFireFromInput = value;
+    }
+
     [Header("Target Detection")]
     [SerializeField] private LayerMask hitboxMask = ~0;
 
@@ -27,6 +37,7 @@ public class ArcadeWeaponController : MonoBehaviour
     private int reserveAmmo;
     private float nextFireTime;
     private bool mobileFireHeld;
+    private bool loggedNoWeapon;
     private Coroutine shootingRoutine;
 
     private readonly Color normalCrosshairColor = Color.black;
@@ -108,6 +119,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
         nextFireTime = 0f;
         HasWeapon = true;
+        loggedNoWeapon = false;
 
         UpdateAmmoUI();
 
@@ -169,12 +181,12 @@ public class ArcadeWeaponController : MonoBehaviour
         KeepCrosshairCentered();
         UpdateCrosshair();
 
-        bool mouseHeld = Mouse.current != null && Mouse.current.leftButton.isPressed;
+        bool mouseHeld = autoFireFromInput && Mouse.current != null && Mouse.current.leftButton.isPressed;
 
         if (mouseHeld || mobileFireHeld)
             Fire();
 
-        if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+        if (autoFireFromInput && Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
             Reload();
     }
 
@@ -211,8 +223,11 @@ public class ArcadeWeaponController : MonoBehaviour
     {
         if (!HasWeapon || currentAmmo <= 0 || aimCamera == null)
         {
-            if (!HasWeapon && aimCamera != null)
+            if (!HasWeapon && aimCamera != null && !loggedNoWeapon)
+            {
+                loggedNoWeapon = true;
                 Debug.LogWarning($"[ArcadeWeaponController] {gameObject.name} Fire dibatalkan: HasWeapon=false (belum beli senjata)");
+            }
             return;
         }
 

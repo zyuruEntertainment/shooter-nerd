@@ -17,6 +17,7 @@ public class BotController : MonoBehaviour
     private ArcadeWeaponController weaponController;
     private BotJumpController jumpController;
     private BotDashController dashController;
+    private PlayerDash playerDash;
     private BotStateMachine stateMachine;
 
     private CharacterController controller;
@@ -100,7 +101,7 @@ public class BotController : MonoBehaviour
     public Vector3 PredictedPlayerPosition(float leadTime)
     {
         if (playerTarget == null) return transform.position;
-        Vector3 vel = physics != null ? physics.HorizontalVelocity : Vector3.zero;
+        Vector3 vel = playerVelocity;
         return playerTarget.position + vel * leadTime;
     }
 
@@ -121,6 +122,11 @@ public class BotController : MonoBehaviour
         weaponController = GetComponent<ArcadeWeaponController>();
         jumpController = GetComponent<BotJumpController>();
         dashController = GetComponent<BotDashController>();
+        playerDash = GetComponent<PlayerDash>();
+
+        // Bot tidak boleh ikut input mouse global dari ArcadeWeaponController.
+        if (weaponController != null)
+            weaponController.AutoFireFromInput = false;
         stateMachine = GetComponent<BotStateMachine>();
 
         controller = GetComponent<CharacterController>();
@@ -147,6 +153,9 @@ public class BotController : MonoBehaviour
         }
 
         if (vision != null) vision.SetTarget(playerTarget);
+
+        if (playerTarget != null)
+            lastPlayerPosition = playerTarget.position;
 
         // Subscribe ke damage agar bot dapat pelarian saat ditembak.
         if (health != null)
@@ -662,7 +671,7 @@ public class BotController : MonoBehaviour
     private void HandleCombatDash(Vector3 toPlayer, float dist)
     {
         if (dashController == null || physics == null || !physics.IsGrounded) return;
-        if (GetComponent<PlayerDash>().IsDashing) return;
+        if (playerDash != null && playerDash.IsDashing) return;
 
         Vector3 dir = toPlayer;
         dir.y = 0f;
@@ -690,7 +699,7 @@ public class BotController : MonoBehaviour
     private void HandleChargeDash(Vector3 toPlayer)
     {
         if (dashController == null || physics == null || !physics.IsGrounded) return;
-        if (GetComponent<PlayerDash>().IsDashing) return;
+        if (playerDash != null && playerDash.IsDashing) return;
 
         Vector3 dir = toPlayer;
         dir.y = 0f;

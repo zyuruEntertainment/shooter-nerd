@@ -17,7 +17,7 @@ public class PauseManager : MonoBehaviour
 
     [Header("Pause Settings")]
     [SerializeField] private bool pauseTimeScale = true;
-    [SerializeField] private bool hideGameplayUIWhilePaused = false;
+    [SerializeField] private bool hideGameplayUIWhilePaused = true;
     [SerializeField] private GameObject gameplayUIRoot;
 
     private GameObject pauseInstance;
@@ -101,8 +101,13 @@ public class PauseManager : MonoBehaviour
             Time.timeScale = 0f;
 
         // Sembunyikan gameplay UI jika konfigurasi mengharuskannya.
-        if (hideGameplayUIWhilePaused && gameplayUIRoot != null)
-            gameplayUIRoot.SetActive(false);
+        if (hideGameplayUIWhilePaused)
+        {
+            if (gameplayUIRoot != null)
+                gameplayUIRoot.SetActive(false);
+            else if (GameplayUIManager.Instance != null)
+                GameplayUIManager.Instance.SetGameplayUI(false);
+        }
 
         // Instantiate pause prefab ke parent (mirip OpenShop).
         pauseInstance = Instantiate(pausePrefab, pauseParent, false);
@@ -128,8 +133,13 @@ public class PauseManager : MonoBehaviour
         isPaused = false;
 
         // Pulihkan gameplay UI.
-        if (hideGameplayUIWhilePaused && gameplayUIRoot != null)
-            gameplayUIRoot.SetActive(true);
+        if (hideGameplayUIWhilePaused)
+        {
+            if (gameplayUIRoot != null)
+                gameplayUIRoot.SetActive(true);
+            else if (GameplayUIManager.Instance != null)
+                GameplayUIManager.Instance.SetGameplayUI(true);
+        }
 
         // Kembalikan kondisi kursor gameplay.
         Cursor.lockState = previousCursorLockState;

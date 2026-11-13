@@ -49,7 +49,7 @@ public class RespawnManager : MonoBehaviour
     {
         if (!autoCollectFromScene) return;
 
-        var points = FindObjectsByType<RespawnPoint>();
+        var points = FindObjectsByType<RespawnPoint>(FindObjectsSortMode.None);
         foreach (var point in points)
         {
             string tag = string.IsNullOrEmpty(point.RespawnTag) ? point.gameObject.tag : point.RespawnTag;
