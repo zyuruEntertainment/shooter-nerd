@@ -1688,7 +1688,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::KillRewardManager
   rewardText: {fileID: 1543879630}
   floatSpeed: 50
-  fadeDuration: 1
   displayDuration: 2
 --- !u!1 &1241393891
 GameObject:
@@ -2851,6 +2850,10 @@ PrefabInstance:
       propertyPath: crosshair
       value: 
       objectReference: {fileID: 9218816580816052320}
+    - target: {fileID: 754887606274318408, guid: be53475310485ba4b803e84548afc7b2, type: 3}
+      propertyPath: m_Height
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 1096672562080790846, guid: be53475310485ba4b803e84548afc7b2, type: 3}
       propertyPath: moveSpeed
       value: 10
@@ -2877,15 +2880,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3944484148408619105, guid: be53475310485ba4b803e84548afc7b2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 0.0000014901161
       objectReference: {fileID: 0}
     - target: {fileID: 3944484148408619105, guid: be53475310485ba4b803e84548afc7b2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -42.496445
+      value: -42.47844
       objectReference: {fileID: 0}
     - target: {fileID: 3944484148408619105, guid: be53475310485ba4b803e84548afc7b2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0.0000014901161
       objectReference: {fileID: 0}
     - target: {fileID: 3944484148408619105, guid: be53475310485ba4b803e84548afc7b2, type: 3}
       propertyPath: m_LocalRotation.w

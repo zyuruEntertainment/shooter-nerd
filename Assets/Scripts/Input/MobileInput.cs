@@ -39,12 +39,22 @@ public class MobileInput : MonoBehaviour,
     // MobileInput only reads its handle position for PlayerMovement.
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (lookPointerId == int.MinValue && IsInside(lookArea, eventData))
+        if (lookPointerId != int.MinValue)
+            return;
+
+        // Abaikan pointer yang dimulai pada FireJoystick.
+        if (FireJoystick.IsPointerOverFireJoystick(eventData.position, eventData.pressEventCamera))
+            return;
+
+        if (IsInside(lookArea, eventData))
             lookPointerId = eventData.pointerId;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
+        if (FireJoystick.IsPointerClaimed(eventData.pointerId))
+            return;
+
         if (eventData.pointerId == lookPointerId)
             lookInput += eventData.delta * lookMultiplier;
     }

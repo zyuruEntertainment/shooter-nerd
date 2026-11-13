@@ -14,7 +14,6 @@ public class KillRewardManager : MonoBehaviour
 
     [Header("Pengaturan Animasi")]
     [SerializeField] private float floatSpeed = 50f; // kecepatan melayang ke atas (piksel per detik)
-    [SerializeField] private float fadeDuration = 1f; // durasi memudah
     [SerializeField] private float displayDuration = 2f; // total waktu tampil
 
     private float timer;

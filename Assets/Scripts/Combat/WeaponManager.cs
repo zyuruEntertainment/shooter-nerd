@@ -17,6 +17,9 @@ public class WeaponManager : MonoBehaviour
 
     private readonly List<WeaponData> ownedWeapons = new List<WeaponData>();
 
+    // Reserve ammo per senjata agar tidak saling berbagi antar senjata.
+    private readonly Dictionary<WeaponData, int> reserveAmmoByWeapon = new Dictionary<WeaponData, int>();
+
     public WeaponData EquippedWeapon { get; private set; }
     public IReadOnlyList<WeaponData> OwnedWeapons => ownedWeapons;
 
@@ -134,7 +137,16 @@ public class WeaponManager : MonoBehaviour
         }
 
         EquippedWeapon = weapon;
+
+        // Simpan reserve awal jika belum ada.
+        if (!reserveAmmoByWeapon.ContainsKey(weapon))
+            reserveAmmoByWeapon[weapon] = weapon.StartingReserveAmmo;
+
         weaponController.ApplyWeaponData(weapon);
+
+        // Terapkan reserve ammo khusus senjata ini.
+        weaponController.SetReserveAmmo(reserveAmmoByWeapon[weapon]);
+
         SyncAndSaveOwnership();
         Debug.Log($"WeaponManager: {weapon.WeaponName} berhasil di-equip.");
         return true;
@@ -145,6 +157,8 @@ public class WeaponManager : MonoBehaviour
         if (weapon != null && !ownedWeapons.Contains(weapon))
         {
             ownedWeapons.Add(weapon);
+            if (!reserveAmmoByWeapon.ContainsKey(weapon))
+                reserveAmmoByWeapon[weapon] = weapon.StartingReserveAmmo;
             OnOwnershipChanged?.Invoke();
             SyncAndSaveOwnership();
         }
@@ -178,6 +192,33 @@ public class WeaponManager : MonoBehaviour
             .ToList();
         SaveSystem.currentData.equippedWeaponName = EquippedWeapon != null ? EquippedWeapon.WeaponName : string.Empty;
         SaveSystem.Save();
+    }
+
+    /// <summary>Tambah reserve ammo untuk senjata tertentu (dan sync ke controller jika sedang equipped).</summary>
+    public void AddReserveAmmo(WeaponData weapon, int amount)
+    {
+        if (weapon == null || amount <= 0)
+            return;
+
+        if (!reserveAmmoByWeapon.ContainsKey(weapon))
+            reserveAmmoByWeapon[weapon] = weapon.StartingReserveAmmo;
+
+        reserveAmmoByWeapon[weapon] += amount;
+
+        if (EquippedWeapon == weapon && weaponController != null)
+            weaponController.SetReserveAmmo(reserveAmmoByWeapon[weapon]);
+    }
+
+    /// <summary>Set reserve ammo untuk senjata tertentu (digunakan saat reload).</summary>
+    public void SetReserveAmmo(WeaponData weapon, int amount)
+    {
+        if (weapon == null)
+            return;
+
+        reserveAmmoByWeapon[weapon] = Mathf.Max(0, amount);
+
+        if (EquippedWeapon == weapon && weaponController != null)
+            weaponController.SetReserveAmmo(reserveAmmoByWeapon[weapon]);
     }
 
     private void OnDestroy()

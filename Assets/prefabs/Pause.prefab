@@ -918,17 +918,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SensitivityManager
   lookSensitivitySlider: {fileID: 2367804937824510354}
-  fireControlSensitivitySlider: {fileID: 278143548429668162}
   fireSensitivitySlider: {fileID: 278143548429668162}
   lookMin: 0.1
   lookMax: 10
-  defaultLook: 6
-  fireControlMin: 0.1
-  fireControlMax: 10
-  defaultFireControl: 1
-  fireRateMin: 0.1
-  fireRateMax: 5
-  defaultFireRate: 1
+  defaultLook: 3
+  fireMin: 0.1
+  fireMax: 10
+  defaultFire: 1
 --- !u!1 &7121445178135887671
 GameObject:
   m_ObjectHideFlags: 0

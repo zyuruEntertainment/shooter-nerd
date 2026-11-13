@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -7,7 +8,6 @@ public class FireJoystick : MonoBehaviour,
     IPointerUpHandler
 {
     [Header("Inspector References")]
-    [SerializeField] private RectTransform touchArea;
     [SerializeField] private RectTransform background;
     [SerializeField] private RectTransform handle;
     [SerializeField] private ArcadeWeaponController weapon;
@@ -17,15 +17,42 @@ public class FireJoystick : MonoBehaviour,
     [SerializeField] private bool keepBackgroundVisible = true;
 
     private int activePointerId = int.MinValue;
+    private Vector2 lastPointerPosition;
+    private Vector2 fireLookDelta;
+
+    public Vector2 FireLookDelta => fireLookDelta;
+
+    private static readonly List<FireJoystick> instances = new List<FireJoystick>();
+
+    public static bool IsPointerOverFireJoystick(Vector2 screenPosition, Camera cam)
+    {
+        foreach (var fj in instances)
+        {
+            if (fj == null || fj.background == null)
+                continue;
+
+            if (RectTransformUtility.RectangleContainsScreenPoint(fj.background, screenPosition, cam))
+                return true;
+        }
+        return false;
+    }
+
+    public static bool IsPointerClaimed(int pointerId)
+    {
+        // Kepemilikan dilacak per instance melalui activePointerId.
+        foreach (var fj in instances)
+        {
+            if (fj != null && fj.activePointerId == pointerId)
+                return true;
+        }
+        return false;
+    }
 
     private void Awake()
     {
-        if (touchArea == null || background == null || handle == null)
+        if (background == null || handle == null)
         {
-            Debug.LogError(
-                "FireJoystick: Assign Touch Area, Background, and Handle in the Inspector.",
-                this
-            );
+            Debug.LogError("FireJoystick: Assign Background and Handle in the Inspector.", this);
             enabled = false;
             return;
         }
@@ -37,14 +64,27 @@ public class FireJoystick : MonoBehaviour,
 
         if (keepBackgroundVisible)
             background.gameObject.SetActive(true);
+
+        if (!instances.Contains(this))
+            instances.Add(this);
+    }
+
+    private void OnDestroy()
+    {
+        instances.Remove(this);
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (activePointerId != int.MinValue || !IsInside(touchArea, eventData))
+        if (activePointerId != int.MinValue)
+            return;
+
+        if (!RectTransformUtility.RectangleContainsScreenPoint(background, eventData.position, eventData.pressEventCamera))
             return;
 
         activePointerId = eventData.pointerId;
+        lastPointerPosition = eventData.position;
+
         background.gameObject.SetActive(true);
         UpdateHandle(eventData);
 
@@ -57,7 +97,9 @@ public class FireJoystick : MonoBehaviour,
         if (eventData.pointerId != activePointerId)
             return;
 
-        // Handle tetap memberi feedback sentuhan, tetapi tidak menggeser crosshair.
+        fireLookDelta += eventData.position - lastPointerPosition;
+        lastPointerPosition = eventData.position;
+
         UpdateHandle(eventData);
     }
 
@@ -78,32 +120,13 @@ public class FireJoystick : MonoBehaviour,
             out Vector2 localPoint))
             return;
 
-        // Sensitivitas input fire (FireControlSensitivity) memengaruhi
-        // respons perpindahan handle, tetapi tetap dibatasi handleRange.
-        float sensitivity = 1f;
-        var settings = SensitivitySettings.Instance;
-        if (settings == null)
-            settings = SensitivitySettings.EnsureInstance();
-        if (settings != null)
-            sensitivity = settings.FireControlSensitivity;
-
-        Vector2 target = localPoint * sensitivity;
-        handle.anchoredPosition = Vector2.ClampMagnitude(target, handleRange);
-    }
-
-    private bool IsInside(RectTransform area, PointerEventData eventData)
-    {
-        return area != null &&
-            RectTransformUtility.RectangleContainsScreenPoint(
-                area,
-                eventData.position,
-                eventData.pressEventCamera
-            );
+        handle.anchoredPosition = Vector2.ClampMagnitude(localPoint, handleRange);
     }
 
     private void ReleaseFire()
     {
         activePointerId = int.MinValue;
+        lastPointerPosition = Vector2.zero;
 
         if (handle != null)
             handle.anchoredPosition = Vector2.zero;
@@ -115,8 +138,16 @@ public class FireJoystick : MonoBehaviour,
             background.gameObject.SetActive(false);
     }
 
+    public Vector2 ConsumeFireLookInput()
+    {
+        Vector2 result = fireLookDelta;
+        fireLookDelta = Vector2.zero;
+        return result;
+    }
+
     private void OnDisable()
     {
-        ReleaseFire();
+        if (activePointerId != int.MinValue)
+            ReleaseFire();
     }
 }

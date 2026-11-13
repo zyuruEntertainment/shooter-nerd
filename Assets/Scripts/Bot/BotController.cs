@@ -52,8 +52,6 @@ public class BotController : MonoBehaviour
     private float lastDamageTime = -999f;
     private float lastChargeTime = -999f;
     private float _lastShootDebugTime = -999f;
-    private float _lastReloadDebugTime = -999f;
-    private float _lastAmmoDebugTime = -999f;
 
     // Reaksi: jeda sebelum bot merespons pemain yang baru terlihat.
     private float reactionTimer;
@@ -126,11 +124,7 @@ public class BotController : MonoBehaviour
 
         // Bot tidak boleh ikut input mouse global dari ArcadeWeaponController.
         if (weaponController != null)
-        {
             weaponController.AutoFireFromInput = false;
-            // Bot tidak terpengaruh pengaturan fire rate milik player.
-            weaponController.UseFireRateMultiplier = false;
-        }
         stateMachine = GetComponent<BotStateMachine>();
 
         controller = GetComponent<CharacterController>();

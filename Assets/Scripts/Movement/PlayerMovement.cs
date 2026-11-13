@@ -26,6 +26,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private PCInput pcInput;
     [SerializeField] private MobileInput mobileInput;
+    [SerializeField] private FireJoystick fireJoystick;
 
     private CharacterController controller;
     private PlayerPhysics playerPhysics;
@@ -45,6 +46,9 @@ public class PlayerMovement : MonoBehaviour
         if (pcInput == null)
             pcInput = GetComponent<PCInput>();
 
+        if (fireJoystick == null)
+            fireJoystick = FindAnyObjectByType<FireJoystick>();
+
         // Pastikan penyimpan sensitivitas persisten tersedia.
         SensitivitySettings.EnsureInstance();
     }
@@ -55,6 +59,7 @@ public class PlayerMovement : MonoBehaviour
         Vector2 lookInput = Vector2.zero;
 
         bool lookFromMobile = false;
+        Vector2 fireLookInput = Vector2.zero;
 
         if (mobileInput != null)
         {
@@ -65,6 +70,13 @@ public class PlayerMovement : MonoBehaviour
                 lookInput = mobileLook;
                 lookFromMobile = true;
             }
+        }
+
+        if (fireJoystick != null)
+        {
+            Vector2 fireLook = fireJoystick.ConsumeFireLookInput();
+            if (fireLook.sqrMagnitude >= 0.0001f)
+                fireLookInput = fireLook;
         }
 
         if (pcInput != null)
@@ -83,7 +95,7 @@ public class PlayerMovement : MonoBehaviour
                 StartDash(moveInput);
         }
 
-        RotatePlayer(lookInput, lookFromMobile);
+        RotatePlayer(lookInput, lookFromMobile, fireLookInput);
         MovePlayer(moveInput);
     }
 
@@ -159,43 +171,47 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void RotatePlayer(Vector2 lookInput, bool fromMobile = false)
+    private void RotatePlayer(Vector2 lookInput, bool fromMobile, Vector2 fireLookInput)
     {
-        if (lookInput.sqrMagnitude < 0.0001f)
-            return;
-
         var settings = SensitivitySettings.Instance;
         if (settings == null)
             settings = SensitivitySettings.EnsureInstance();
 
-        float rawSensitivity = settings != null
-            ? settings.LookSensitivity
-            : 3f;
+        float rawLook = settings != null ? settings.LookSensitivity : 3f;
+        float rawFire = settings != null ? settings.FireSensitivity : 1f;
 
-        // Pemetaan nonlinear dari nilai slider ke pengali internal.
-        // Lihat SensitivitySettings.MapLookSensitivity untuk dokumentasi kurva.
-        float mappedSensitivity = SensitivitySettings.MapLookSensitivity(rawSensitivity);
+        float mappedLook = SensitivitySettings.MapLookSensitivity(rawLook);
+        float mappedFire = SensitivitySettings.MapLookSensitivity(rawFire);
 
-        float mouseX;
-        float mouseY;
+        float mouseX = 0f;
+        float mouseY = 0f;
 
-        if (fromMobile)
+        if (lookInput.sqrMagnitude >= 0.0001f)
         {
-            // Normalisasi sentuhan terhadap tinggi layar (satuan konsisten).
+            if (fromMobile)
+            {
+                float screenRef = Mathf.Max(Screen.height, 1f);
+                Vector2 normalized = lookInput / screenRef;
+                mouseX += normalized.x * 90f * mappedLook;
+                mouseY += normalized.y * 90f * mappedLook;
+            }
+            else
+            {
+                mouseX += lookInput.x * 0.1f * mappedLook;
+                mouseY += lookInput.y * 0.1f * mappedLook;
+            }
+        }
+
+        if (fireLookInput.sqrMagnitude >= 0.0001f)
+        {
             float screenRef = Mathf.Max(Screen.height, 1f);
-            Vector2 normalized = lookInput / screenRef;
+            Vector2 normalized = fireLookInput / screenRef;
+            mouseX += normalized.x * 90f * mappedFire;
+            mouseY += normalized.y * 90f * mappedFire;
+        }
 
-            // 90 derajat untuk satu gerakan sepanjang tinggi layar pada sensitivity 1.
-            mouseX = normalized.x * 90f * mappedSensitivity;
-            mouseY = normalized.y * 90f * mappedSensitivity;
-        }
-        else
-        {
-            // Mouse delta per frame, tanpa deltaTime agar konsisten terhadap frame rate.
-            // 0.1 adalah kalibrasi agar sensitivitas PC tetap nyaman.
-            mouseX = lookInput.x * 0.1f * mappedSensitivity;
-            mouseY = lookInput.y * 0.1f * mappedSensitivity;
-        }
+        if (Mathf.Abs(mouseX) < 0.0001f && Mathf.Abs(mouseY) < 0.0001f)
+            return;
 
         transform.Rotate(Vector3.up * mouseX);
 

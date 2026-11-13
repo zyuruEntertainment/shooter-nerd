@@ -16,38 +16,15 @@ public class SensitivitySettings : MonoBehaviour
         lookSensitivity = Mathf.Max(0.01f, value);
     }
 
-    [Header("Fire Control Sensitivity")]
+    [Header("Fire Sensitivity")]
     [SerializeField, Min(0.01f)]
-    private float fireControlSensitivity = 1f;
+    private float fireSensitivity = 1f;
 
-    public float FireControlSensitivity => fireControlSensitivity;
-
-    public void SetFireControlSensitivity(float value)
-    {
-        fireControlSensitivity = Mathf.Max(0.01f, value);
-    }
-
-    [Header("Fire Rate Multiplier")]
-    [SerializeField, Min(0.01f)]
-    private float fireRateMultiplier = 1f;
-
-    public float FireRateMultiplier => fireRateMultiplier;
-
-    public void SetFireRateMultiplier(float value)
-    {
-        fireRateMultiplier = Mathf.Max(0.01f, value);
-    }
-
-    // Kompatibilitas lama
-    public float FireSensitivity
-    {
-        get => fireRateMultiplier;
-        set => fireRateMultiplier = Mathf.Max(0.01f, value);
-    }
+    public float FireSensitivity => fireSensitivity;
 
     public void SetFireSensitivity(float value)
     {
-        SetFireRateMultiplier(value);
+        fireSensitivity = Mathf.Max(0.01f, value);
     }
 
     /// <summary>
@@ -60,7 +37,7 @@ public class SensitivitySettings : MonoBehaviour
             return Instance;
 
 #if UNITY_2023_1_OR_NEWER
-        var found = Object.FindFirstObjectByType<SensitivitySettings>();
+        var found = Object.FindAnyObjectByType<SensitivitySettings>();
 #else
         var found = Object.FindObjectOfType<SensitivitySettings>();
 #endif

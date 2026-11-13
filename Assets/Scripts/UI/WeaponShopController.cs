@@ -375,10 +375,13 @@ public class WeaponShopController : MonoBehaviour
         // Kurangi kredit.
         wallet.TrySpend(selectedAmmo.Price);
 
-        // Tambah ammo ke senjata yang sedang dipakai.
-        int reserveBefore = playerWeaponController.ReserveAmmo;
-        playerWeaponController.AddAmmo(selectedAmmo.AmountPerPurchase);
-        int reserveAfter = playerWeaponController.ReserveAmmo;
+        // Tambah ammo ke senjata yang sedang dipakai (persisten per senjata).
+        int reserveBefore = playerWeaponController != null ? playerWeaponController.ReserveAmmo : 0;
+        if (weaponManager != null)
+            weaponManager.AddReserveAmmo(equipped, selectedAmmo.AmountPerPurchase);
+        else if (playerWeaponController != null)
+            playerWeaponController.AddAmmo(selectedAmmo.AmountPerPurchase);
+        int reserveAfter = playerWeaponController != null ? playerWeaponController.ReserveAmmo : 0;
 
         if (statusText != null)
             statusText.text = "Berbeli ammo " + selectedAmmo.AmmoName + " +" + selectedAmmo.AmountPerPurchase;

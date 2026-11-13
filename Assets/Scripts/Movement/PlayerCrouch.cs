@@ -31,6 +31,9 @@ public class PlayerCrouch : MonoBehaviour
 
     private void Awake()
     {
+        if (initialized)
+            return;
+
         if (capsuleCollider == null)
             capsuleCollider = GetComponent<CapsuleCollider>();
 
@@ -40,6 +43,16 @@ public class PlayerCrouch : MonoBehaviour
         if (characterController == null)
             characterController = GetComponent<CharacterController>();
 
+        if (capsuleCollider == null || sphereCollider == null)
+        {
+            Debug.LogError("PlayerCrouch: CapsuleCollider/SphereCollider tidak ditemukan.", this);
+            enabled = false;
+            return;
+        }
+
+        // Pastikan collider berada pada ukuran penuh sebelum menyimpan nilai original.
+        // (Mencegah prefab yang tersimpan dalam keadaan crouch.)
+        // Tidak mengubah jika heightReduction <= 0.
         originalCapsuleHeight = capsuleCollider.height;
         originalCapsuleCenter = capsuleCollider.center;
         originalSphereCenter = sphereCollider.center;
@@ -60,18 +73,58 @@ public class PlayerCrouch : MonoBehaviour
             return;
 
         Keyboard keyboard = Keyboard.current;
-        bool keyHeld = keyboard != null && keyboard[crouchKey].isPressed;
-        bool keyPressed = keyboard != null && keyboard[crouchKey].wasPressedThisFrame;
+        if (keyboard == null)
+            return;
+
+        bool keyHeld = keyboard[crouchKey].isPressed;
+        bool keyPressed = keyboard[crouchKey].wasPressedThisFrame;
+        bool keyReleased = keyboard[crouchKey].wasReleasedThisFrame;
 
         if (holdToCrouch)
-            SetCrouching(keyHeld);
+        {
+            // Gunakan edge input agar status dari tombol UI tidak ditimpa setiap frame.
+            if (keyPressed)
+                SetCrouching(true);
+            else if (keyReleased)
+                SetCrouching(false);
+        }
         else if (keyPressed)
+        {
             SetCrouching(!IsCrouching);
+        }
+    }
+
+    /// <summary>Toggle status crouch. Dipanggil dari Button OnClick.</summary>
+    public void OnCrouchClicked()
+    {
+        if (!initialized)
+            Awake();
+
+        if (capsuleCollider == null)
+            capsuleCollider = GetComponent<CapsuleCollider>();
+        if (sphereCollider == null)
+            sphereCollider = GetComponent<SphereCollider>();
+        if (characterController == null)
+            characterController = GetComponent<CharacterController>();
+
+        if (capsuleCollider == null || sphereCollider == null)
+        {
+            Debug.LogError("PlayerCrouch: collider tidak ditemukan.", this);
+            return;
+        }
+
+        SetCrouching(!IsCrouching);
     }
 
     public void SetCrouching(bool crouching)
     {
+        if (!initialized)
+            Awake();
+
         if (!initialized || IsCrouching == crouching)
+            return;
+
+        if (capsuleCollider == null || sphereCollider == null)
             return;
 
         IsCrouching = crouching;

@@ -38,16 +38,6 @@ public class ArcadeWeaponController : MonoBehaviour
     private float nextFireTime;
     private bool mobileFireHeld;
     private bool loggedNoWeapon;
-
-    [Header("Fire Rate")]
-    [Tooltip("Jika true, fire rate mengikuti FireRateMultiplier dari SensitivitySettings. Bot sebaiknya false.")]
-    [SerializeField] private bool useFireRateMultiplier = true;
-
-    public bool UseFireRateMultiplier
-    {
-        get => useFireRateMultiplier;
-        set => useFireRateMultiplier = value;
-    }
     private Coroutine shootingRoutine;
 
     private readonly Color normalCrosshairColor = Color.black;
@@ -154,6 +144,14 @@ public class ArcadeWeaponController : MonoBehaviour
         Debug.Log($"[ArcadeWeaponController] {gameObject.name} AddAmmo +{amount}. Reserve={reserveAmmo}");
     }
 
+    /// <summary>Set jumlah reserve ammo (digunakan oleh WeaponManager untuk persistensi per senjata).</summary>
+    public void SetReserveAmmo(int amount)
+    {
+        reserveAmmo = Mathf.Max(0, amount);
+        UpdateAmmoUI();
+        SyncAmmoWithSiblings();
+    }
+
     /// <summary>Set jumlah ammo (digunakan untuk memastikan bot bisa menembak setelah membeli/ganti senjata).</summary>
     public void SetAmmo(int amount)
     {
@@ -241,20 +239,7 @@ public class ArcadeWeaponController : MonoBehaviour
             return;
         }
 
-        float fireRateMultiplier = 1f;
-
-        if (useFireRateMultiplier)
-        {
-            var sensSettings = SensitivitySettings.Instance;
-            if (sensSettings == null)
-                sensSettings = SensitivitySettings.EnsureInstance();
-
-            fireRateMultiplier = sensSettings != null
-                ? sensSettings.FireRateMultiplier
-                : 1f;
-        }
-
-        float interval = fireInterval / Mathf.Max(0.01f, fireRateMultiplier);
+        float interval = fireInterval;
 
         if (Time.time < nextFireTime)
             return;
@@ -324,6 +309,12 @@ public class ArcadeWeaponController : MonoBehaviour
 
         UpdateAmmoUI();
         SyncAmmoWithSiblings();
+
+        // Sinkronkan reserve ke WeaponManager jika controller ini milik player.
+        if (WeaponManager.Instance != null && WeaponManager.Instance.ActiveWeaponController == this)
+        {
+            WeaponManager.Instance.SetReserveAmmo(WeaponManager.Instance.EquippedWeapon, reserveAmmo);
+        }
     }
 
     private void UpdateAmmoUI()
