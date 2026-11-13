@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CapsuleCollider))]
@@ -22,6 +23,7 @@ public class PlayerCrouch : MonoBehaviour
     private float originalControllerHeight;
     private Vector3 originalControllerCenter;
     private bool initialized;
+    private bool crouchButtonBound;
 
     public bool IsCrouching { get; private set; }
 
@@ -64,10 +66,34 @@ public class PlayerCrouch : MonoBehaviour
         }
 
         initialized = true;
+
+        // Hanya Player (tag Player) yang boleh mengontrol tombol crouch.
+        if (gameObject.CompareTag("Player"))
+            TryBindCrouchButton();
+    }
+
+    private void TryBindCrouchButton()
+    {
+        if (crouchButtonBound)
+            return;
+
+        var buttons = FindObjectsByType<Button>();
+        foreach (var btn in buttons)
+        {
+            if (btn != null && btn.gameObject.name == "Crouch")
+            {
+                btn.onClick.RemoveListener(OnCrouchClicked);
+                btn.onClick.AddListener(OnCrouchClicked);
+                crouchButtonBound = true;
+            }
+        }
     }
 
     private void Update()
     {
+        if (gameObject.CompareTag("Player") && !crouchButtonBound)
+            TryBindCrouchButton();
+
         // Jika diinialisasi oleh sistem eksternal (bot), jangan acak-nginputkan status jongkok.
         if (IgnoreInput)
             return;
