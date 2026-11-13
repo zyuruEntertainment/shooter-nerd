@@ -16,15 +16,38 @@ public class SensitivitySettings : MonoBehaviour
         lookSensitivity = Mathf.Max(0.01f, value);
     }
 
-    [Header("Fire Sensitivity")]
+    [Header("Fire Control Sensitivity")]
     [SerializeField, Min(0.01f)]
-    private float fireSensitivity = 1f;
+    private float fireControlSensitivity = 1f;
 
-    public float FireSensitivity => fireSensitivity;
+    public float FireControlSensitivity => fireControlSensitivity;
+
+    public void SetFireControlSensitivity(float value)
+    {
+        fireControlSensitivity = Mathf.Max(0.01f, value);
+    }
+
+    [Header("Fire Rate Multiplier")]
+    [SerializeField, Min(0.01f)]
+    private float fireRateMultiplier = 1f;
+
+    public float FireRateMultiplier => fireRateMultiplier;
+
+    public void SetFireRateMultiplier(float value)
+    {
+        fireRateMultiplier = Mathf.Max(0.01f, value);
+    }
+
+    // Kompatibilitas lama
+    public float FireSensitivity
+    {
+        get => fireRateMultiplier;
+        set => fireRateMultiplier = Mathf.Max(0.01f, value);
+    }
 
     public void SetFireSensitivity(float value)
     {
-        fireSensitivity = Mathf.Max(0.01f, value);
+        SetFireRateMultiplier(value);
     }
 
     /// <summary>

@@ -78,8 +78,17 @@ public class FireJoystick : MonoBehaviour,
             out Vector2 localPoint))
             return;
 
-        handle.anchoredPosition =
-            Vector2.ClampMagnitude(localPoint, handleRange);
+        // Sensitivitas input fire (FireControlSensitivity) memengaruhi
+        // respons perpindahan handle, tetapi tetap dibatasi handleRange.
+        float sensitivity = 1f;
+        var settings = SensitivitySettings.Instance;
+        if (settings == null)
+            settings = SensitivitySettings.EnsureInstance();
+        if (settings != null)
+            sensitivity = settings.FireControlSensitivity;
+
+        Vector2 target = localPoint * sensitivity;
+        handle.anchoredPosition = Vector2.ClampMagnitude(target, handleRange);
     }
 
     private bool IsInside(RectTransform area, PointerEventData eventData)

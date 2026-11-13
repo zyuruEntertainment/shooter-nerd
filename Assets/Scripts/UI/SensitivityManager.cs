@@ -2,8 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Mengelola sensitivitas look dan fire secara terpisah, serta menghubungkan
-/// kedua nilai tersebut ke slider UI (look slider dan fire slider).
+/// Mengelola sensitivitas look, fire control, dan fire rate secara terpisah.
 /// </summary>
 public class SensitivityManager : MonoBehaviour
 {
@@ -12,7 +11,9 @@ public class SensitivityManager : MonoBehaviour
     [Header("Sliders")]
     [Tooltip("Slider untuk sensitivitas look (gerak kamera).")]
     [SerializeField] private Slider lookSensitivitySlider;
-    [Tooltip("Slider untuk sensitivitas fire (kecepatan tembak).")]
+    [Tooltip("Slider untuk sensitivitas kontrol fire (gerakan handle).")]
+    [SerializeField] private Slider fireControlSensitivitySlider;
+    [Tooltip("Slider untuk fire rate (kecepatan tembak).")]
     [SerializeField] private Slider fireSensitivitySlider;
 
     [Header("Look Sensitivity Range")]
@@ -20,13 +21,19 @@ public class SensitivityManager : MonoBehaviour
     [SerializeField, Min(0.01f)] private float lookMax = 10f;
     [SerializeField, Min(0.01f)] private float defaultLook = 3f;
 
-    [Header("Fire Sensitivity Range")]
-    [SerializeField, Min(0.01f)] private float fireMin = 0.1f;
-    [SerializeField, Min(0.01f)] private float fireMax = 5f;
-    [SerializeField, Min(0.01f)] private float defaultFire = 1f;
+    [Header("Fire Control Sensitivity Range")]
+    [SerializeField, Min(0.01f)] private float fireControlMin = 0.1f;
+    [SerializeField, Min(0.01f)] private float fireControlMax = 10f;
+    [SerializeField, Min(0.01f)] private float defaultFireControl = 1f;
+
+    [Header("Fire Rate Range")]
+    [SerializeField, Min(0.01f)] private float fireRateMin = 0.1f;
+    [SerializeField, Min(0.01f)] private float fireRateMax = 5f;
+    [SerializeField, Min(0.01f)] private float defaultFireRate = 1f;
 
     public float LookSensitivity { get; private set; }
-    public float FireSensitivity { get; private set; }
+    public float FireControlSensitivity { get; private set; }
+    public float FireRateMultiplier { get; private set; }
 
     private bool initialized;
 
@@ -40,7 +47,6 @@ public class SensitivityManager : MonoBehaviour
 
         Instance = this;
 
-        // Ambil/buat instance persisten, bukan child dari Pause UI.
         SensitivitySettings.EnsureInstance();
     }
 
@@ -50,30 +56,30 @@ public class SensitivityManager : MonoBehaviour
             return;
         initialized = true;
 
-        // Ambil nilai dari SensitivitySettings jika sudah ada, agar perubahan
-        // slider sebelumnya tidak ditimpa inisialisasi.
-        if (SensitivitySettings.Instance != null)
+        var settings = SensitivitySettings.Instance;
+        if (settings != null)
         {
-            LookSensitivity = Mathf.Clamp(SensitivitySettings.Instance.LookSensitivity, lookMin, lookMax);
-            FireSensitivity = Mathf.Clamp(SensitivitySettings.Instance.FireSensitivity, fireMin, fireMax);
+            LookSensitivity = Mathf.Clamp(settings.LookSensitivity, lookMin, lookMax);
+            FireControlSensitivity = Mathf.Clamp(settings.FireControlSensitivity, fireControlMin, fireControlMax);
+            FireRateMultiplier = Mathf.Clamp(settings.FireRateMultiplier, fireRateMin, fireRateMax);
         }
         else
         {
             LookSensitivity = Mathf.Clamp(defaultLook, lookMin, lookMax);
-            FireSensitivity = Mathf.Clamp(defaultFire, fireMin, fireMax);
+            FireControlSensitivity = Mathf.Clamp(defaultFireControl, fireControlMin, fireControlMax);
+            FireRateMultiplier = Mathf.Clamp(defaultFireRate, fireRateMin, fireRateMax);
         }
 
-        // Sinkronkan ke SensitivitySettings persisten.
         if (SensitivitySettings.Instance == null)
             SensitivitySettings.EnsureInstance();
 
         if (SensitivitySettings.Instance != null)
         {
             SensitivitySettings.Instance.SetLookSensitivity(LookSensitivity);
-            SensitivitySettings.Instance.SetFireSensitivity(FireSensitivity);
+            SensitivitySettings.Instance.SetFireControlSensitivity(FireControlSensitivity);
+            SensitivitySettings.Instance.SetFireRateMultiplier(FireRateMultiplier);
         }
 
-        // Siapkan slider look.
         if (lookSensitivitySlider != null)
         {
             lookSensitivitySlider.minValue = lookMin;
@@ -82,13 +88,20 @@ public class SensitivityManager : MonoBehaviour
             lookSensitivitySlider.onValueChanged.AddListener(OnLookSliderChanged);
         }
 
-        // Siapkan slider fire.
+        if (fireControlSensitivitySlider != null)
+        {
+            fireControlSensitivitySlider.minValue = fireControlMin;
+            fireControlSensitivitySlider.maxValue = fireControlMax;
+            fireControlSensitivitySlider.SetValueWithoutNotify(FireControlSensitivity);
+            fireControlSensitivitySlider.onValueChanged.AddListener(OnFireControlSliderChanged);
+        }
+
         if (fireSensitivitySlider != null)
         {
-            fireSensitivitySlider.minValue = fireMin;
-            fireSensitivitySlider.maxValue = fireMax;
-            fireSensitivitySlider.SetValueWithoutNotify(FireSensitivity);
-            fireSensitivitySlider.onValueChanged.AddListener(OnFireSliderChanged);
+            fireSensitivitySlider.minValue = fireRateMin;
+            fireSensitivitySlider.maxValue = fireRateMax;
+            fireSensitivitySlider.SetValueWithoutNotify(FireRateMultiplier);
+            fireSensitivitySlider.onValueChanged.AddListener(OnFireRateSliderChanged);
         }
     }
 
@@ -96,9 +109,10 @@ public class SensitivityManager : MonoBehaviour
     {
         if (lookSensitivitySlider != null)
             lookSensitivitySlider.onValueChanged.RemoveListener(OnLookSliderChanged);
-
+        if (fireControlSensitivitySlider != null)
+            fireControlSensitivitySlider.onValueChanged.RemoveListener(OnFireControlSliderChanged);
         if (fireSensitivitySlider != null)
-            fireSensitivitySlider.onValueChanged.RemoveListener(OnFireSliderChanged);
+            fireSensitivitySlider.onValueChanged.RemoveListener(OnFireRateSliderChanged);
 
         if (Instance == this)
             Instance = null;
@@ -107,40 +121,48 @@ public class SensitivityManager : MonoBehaviour
     private void OnLookSliderChanged(float value)
     {
         LookSensitivity = Mathf.Clamp(value, lookMin, lookMax);
-
         if (SensitivitySettings.Instance != null)
             SensitivitySettings.Instance.SetLookSensitivity(LookSensitivity);
     }
 
-    private void OnFireSliderChanged(float value)
+    private void OnFireControlSliderChanged(float value)
     {
-        FireSensitivity = Mathf.Clamp(value, fireMin, fireMax);
-
+        FireControlSensitivity = Mathf.Clamp(value, fireControlMin, fireControlMax);
         if (SensitivitySettings.Instance != null)
-            SensitivitySettings.Instance.SetFireSensitivity(FireSensitivity);
+            SensitivitySettings.Instance.SetFireControlSensitivity(FireControlSensitivity);
     }
 
-    /// <summary>Set sensitivitas look secara programatik (juga memperbarui slider).</summary>
+    private void OnFireRateSliderChanged(float value)
+    {
+        FireRateMultiplier = Mathf.Clamp(value, fireRateMin, fireRateMax);
+        if (SensitivitySettings.Instance != null)
+            SensitivitySettings.Instance.SetFireRateMultiplier(FireRateMultiplier);
+    }
+
     public void SetLookSensitivity(float value)
     {
         LookSensitivity = Mathf.Clamp(value, lookMin, lookMax);
-
         if (SensitivitySettings.Instance != null)
             SensitivitySettings.Instance.SetLookSensitivity(LookSensitivity);
-
         if (lookSensitivitySlider != null)
             lookSensitivitySlider.value = LookSensitivity;
     }
 
-    /// <summary>Set sensitivitas fire secara programatik (juga memperbarui slider).</summary>
-    public void SetFireSensitivity(float value)
+    public void SetFireControlSensitivity(float value)
     {
-        FireSensitivity = Mathf.Clamp(value, fireMin, fireMax);
-
+        FireControlSensitivity = Mathf.Clamp(value, fireControlMin, fireControlMax);
         if (SensitivitySettings.Instance != null)
-            SensitivitySettings.Instance.SetFireSensitivity(FireSensitivity);
+            SensitivitySettings.Instance.SetFireControlSensitivity(FireControlSensitivity);
+        if (fireControlSensitivitySlider != null)
+            fireControlSensitivitySlider.value = FireControlSensitivity;
+    }
 
+    public void SetFireRateMultiplier(float value)
+    {
+        FireRateMultiplier = Mathf.Clamp(value, fireRateMin, fireRateMax);
+        if (SensitivitySettings.Instance != null)
+            SensitivitySettings.Instance.SetFireRateMultiplier(FireRateMultiplier);
         if (fireSensitivitySlider != null)
-            fireSensitivitySlider.value = FireSensitivity;
+            fireSensitivitySlider.value = FireRateMultiplier;
     }
 }

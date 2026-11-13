@@ -38,6 +38,16 @@ public class ArcadeWeaponController : MonoBehaviour
     private float nextFireTime;
     private bool mobileFireHeld;
     private bool loggedNoWeapon;
+
+    [Header("Fire Rate")]
+    [Tooltip("Jika true, fire rate mengikuti FireRateMultiplier dari SensitivitySettings. Bot sebaiknya false.")]
+    [SerializeField] private bool useFireRateMultiplier = true;
+
+    public bool UseFireRateMultiplier
+    {
+        get => useFireRateMultiplier;
+        set => useFireRateMultiplier = value;
+    }
     private Coroutine shootingRoutine;
 
     private readonly Color normalCrosshairColor = Color.black;
@@ -231,15 +241,20 @@ public class ArcadeWeaponController : MonoBehaviour
             return;
         }
 
-        var sensSettings = SensitivitySettings.Instance;
-        if (sensSettings == null)
-            sensSettings = SensitivitySettings.EnsureInstance();
+        float fireRateMultiplier = 1f;
 
-        float fireSensitivity = sensSettings != null
-            ? sensSettings.FireSensitivity
-            : 1f;
+        if (useFireRateMultiplier)
+        {
+            var sensSettings = SensitivitySettings.Instance;
+            if (sensSettings == null)
+                sensSettings = SensitivitySettings.EnsureInstance();
 
-        float interval = fireInterval / Mathf.Max(0.01f, fireSensitivity);
+            fireRateMultiplier = sensSettings != null
+                ? sensSettings.FireRateMultiplier
+                : 1f;
+        }
+
+        float interval = fireInterval / Mathf.Max(0.01f, fireRateMultiplier);
 
         if (Time.time < nextFireTime)
             return;

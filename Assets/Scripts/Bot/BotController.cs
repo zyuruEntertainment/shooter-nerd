@@ -126,7 +126,11 @@ public class BotController : MonoBehaviour
 
         // Bot tidak boleh ikut input mouse global dari ArcadeWeaponController.
         if (weaponController != null)
+        {
             weaponController.AutoFireFromInput = false;
+            // Bot tidak terpengaruh pengaturan fire rate milik player.
+            weaponController.UseFireRateMultiplier = false;
+        }
         stateMachine = GetComponent<BotStateMachine>();
 
         controller = GetComponent<CharacterController>();
