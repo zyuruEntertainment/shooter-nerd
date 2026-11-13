@@ -13,6 +13,7 @@ public class MobileInput : MonoBehaviour,
 
     [Header("Look Area")]
     [SerializeField] private RectTransform lookArea;
+    // Pre-multiplier input sentuh (bukan sensitivitas pengguna). Default 1 agar tidak ganda.
     [SerializeField, Min(0.01f)] private float lookMultiplier = 1f;
 
     private int lookPointerId = int.MinValue;

@@ -5,8 +5,9 @@ public class SensitivitySettings : MonoBehaviour
     public static SensitivitySettings Instance { get; private set; }
 
     [Header("Look Sensitivity")]
+    [Tooltip("Nilai mentah slider (0.1 - 10). Dipetakan ke pengali internal melalui MapLookSensitivity.")]
     [SerializeField, Min(0.01f)]
-    private float lookSensitivity = 6f;
+    private float lookSensitivity = 3f;
 
     public float LookSensitivity => lookSensitivity;
 
@@ -72,5 +73,17 @@ public class SensitivitySettings : MonoBehaviour
     {
         if (Instance == this)
             Instance = null;
+    }
+
+    /// <summary>
+    /// Memetakan nilai mentah slider (0.1 - 10) ke pengali internal.
+    /// Kurva kuadratik memberi presisi lebih tinggi pada sensitivitas rendah.
+    /// </summary>
+    public static float MapLookSensitivity(float raw)
+    {
+        raw = Mathf.Clamp(raw, 0.1f, 10f);
+        float t = (raw - 0.1f) / (10f - 0.1f);
+        t = t * t; // ease-in
+        return Mathf.Lerp(0.1f, 5f, t);
     }
 }

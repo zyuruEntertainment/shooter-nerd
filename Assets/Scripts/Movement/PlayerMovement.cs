@@ -168,25 +168,33 @@ public class PlayerMovement : MonoBehaviour
         if (settings == null)
             settings = SensitivitySettings.EnsureInstance();
 
-        float sensitivity = settings != null
+        float rawSensitivity = settings != null
             ? settings.LookSensitivity
-            : 6f;
+            : 3f;
 
-        // Input mouse PC adalah delta per frame, jadi tetap dikalikan deltaTime.
-        // Input sentuh mobile adalah delta posisi sentuhan (PointerEventData.delta)
-        // yang tidak boleh dikalikan deltaTime untuk kedua kalinya.
+        // Pemetaan nonlinear dari nilai slider ke pengali internal.
+        // Lihat SensitivitySettings.MapLookSensitivity untuk dokumentasi kurva.
+        float mappedSensitivity = SensitivitySettings.MapLookSensitivity(rawSensitivity);
+
         float mouseX;
         float mouseY;
+
         if (fromMobile)
         {
-            mouseX = lookInput.x * sensitivity;
-            mouseY = lookInput.y * sensitivity;
+            // Normalisasi sentuhan terhadap tinggi layar (satuan konsisten).
+            float screenRef = Mathf.Max(Screen.height, 1f);
+            Vector2 normalized = lookInput / screenRef;
+
+            // 90 derajat untuk satu gerakan sepanjang tinggi layar pada sensitivity 1.
+            mouseX = normalized.x * 90f * mappedSensitivity;
+            mouseY = normalized.y * 90f * mappedSensitivity;
         }
         else
         {
-            float deltaTime = Time.deltaTime;
-            mouseX = lookInput.x * sensitivity * deltaTime;
-            mouseY = lookInput.y * sensitivity * deltaTime;
+            // Mouse delta per frame, tanpa deltaTime agar konsisten terhadap frame rate.
+            // 0.1 adalah kalibrasi agar sensitivitas PC tetap nyaman.
+            mouseX = lookInput.x * 0.1f * mappedSensitivity;
+            mouseY = lookInput.y * 0.1f * mappedSensitivity;
         }
 
         transform.Rotate(Vector3.up * mouseX);

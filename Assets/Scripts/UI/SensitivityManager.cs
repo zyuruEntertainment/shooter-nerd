@@ -18,7 +18,7 @@ public class SensitivityManager : MonoBehaviour
     [Header("Look Sensitivity Range")]
     [SerializeField, Min(0.01f)] private float lookMin = 0.1f;
     [SerializeField, Min(0.01f)] private float lookMax = 10f;
-    [SerializeField, Min(0.01f)] private float defaultLook = 6f;
+    [SerializeField, Min(0.01f)] private float defaultLook = 3f;
 
     [Header("Fire Sensitivity Range")]
     [SerializeField, Min(0.01f)] private float fireMin = 0.1f;
