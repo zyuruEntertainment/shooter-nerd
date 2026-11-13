@@ -51,10 +51,17 @@ public class PlayerMovement : MonoBehaviour
         Vector2 moveInput = Vector2.zero;
         Vector2 lookInput = Vector2.zero;
 
+        bool lookFromMobile = false;
+
         if (mobileInput != null)
         {
             moveInput = mobileInput.MoveInput;
-            lookInput = mobileInput.ConsumeLookInput();
+            Vector2 mobileLook = mobileInput.ConsumeLookInput();
+            if (mobileLook.sqrMagnitude >= 0.0001f)
+            {
+                lookInput = mobileLook;
+                lookFromMobile = true;
+            }
         }
 
         if (pcInput != null)
@@ -62,14 +69,18 @@ public class PlayerMovement : MonoBehaviour
             if (moveInput.sqrMagnitude < 0.0001f)
                 moveInput = pcInput.MoveInput;
 
-            if (lookInput.sqrMagnitude < 0.0001f)
-                lookInput = pcInput.ConsumeLookInput();
+            Vector2 pcLook = pcInput.ConsumeLookInput();
+            if (pcLook.sqrMagnitude >= 0.0001f)
+            {
+                lookInput = pcLook;
+                lookFromMobile = false;
+            }
 
             if (pcInput.ConsumeDashInput())
                 StartDash(moveInput);
         }
 
-        RotatePlayer(lookInput);
+        RotatePlayer(lookInput, lookFromMobile);
         MovePlayer(moveInput);
     }
 
@@ -145,7 +156,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void RotatePlayer(Vector2 lookInput)
+    private void RotatePlayer(Vector2 lookInput, bool fromMobile = false)
     {
         if (lookInput.sqrMagnitude < 0.0001f)
             return;
@@ -154,10 +165,22 @@ public class PlayerMovement : MonoBehaviour
             ? SensitivitySettings.Instance.LookSensitivity
             : 1f;
 
-        float deltaTime = Time.deltaTime;
-
-        float mouseX = lookInput.x * sensitivity * deltaTime;
-        float mouseY = lookInput.y * sensitivity * deltaTime;
+        // Input mouse PC adalah delta per frame, jadi tetap dikalikan deltaTime.
+        // Input sentuh mobile adalah delta posisi sentuhan (PointerEventData.delta)
+        // yang tidak boleh dikalikan deltaTime untuk kedua kalinya.
+        float mouseX;
+        float mouseY;
+        if (fromMobile)
+        {
+            mouseX = lookInput.x * sensitivity;
+            mouseY = lookInput.y * sensitivity;
+        }
+        else
+        {
+            float deltaTime = Time.deltaTime;
+            mouseX = lookInput.x * sensitivity * deltaTime;
+            mouseY = lookInput.y * sensitivity * deltaTime;
+        }
 
         transform.Rotate(Vector3.up * mouseX);
 

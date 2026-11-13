@@ -28,6 +28,8 @@ public class SensitivityManager : MonoBehaviour
     public float LookSensitivity { get; private set; }
     public float FireSensitivity { get; private set; }
 
+    private bool initialized;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -46,11 +48,27 @@ public class SensitivityManager : MonoBehaviour
 
     private void Start()
     {
-        // Inisialisasi nilai awal.
-        LookSensitivity = Mathf.Clamp(defaultLook, lookMin, lookMax);
-        FireSensitivity = Mathf.Clamp(defaultFire, fireMin, fireMax);
+        if (initialized)
+            return;
+        initialized = true;
 
-        // Sinkronkan ke SensitivitySettings.
+        // Ambil nilai dari SensitivitySettings jika sudah ada, agar perubahan
+        // slider sebelumnya tidak ditimpa inisialisasi.
+        if (SensitivitySettings.Instance != null)
+        {
+            LookSensitivity = Mathf.Clamp(SensitivitySettings.Instance.LookSensitivity, lookMin, lookMax);
+            FireSensitivity = Mathf.Clamp(SensitivitySettings.Instance.FireSensitivity, fireMin, fireMax);
+        }
+        else
+        {
+            LookSensitivity = Mathf.Clamp(defaultLook, lookMin, lookMax);
+            FireSensitivity = Mathf.Clamp(defaultFire, fireMin, fireMax);
+        }
+
+        // Sinkronkan ke SensitivitySettings (pastikan instance ada).
+        if (SensitivitySettings.Instance == null && gameObject != null)
+            gameObject.AddComponent<SensitivitySettings>();
+
         if (SensitivitySettings.Instance != null)
         {
             SensitivitySettings.Instance.SetLookSensitivity(LookSensitivity);
@@ -62,7 +80,7 @@ public class SensitivityManager : MonoBehaviour
         {
             lookSensitivitySlider.minValue = lookMin;
             lookSensitivitySlider.maxValue = lookMax;
-            lookSensitivitySlider.value = LookSensitivity;
+            lookSensitivitySlider.SetValueWithoutNotify(LookSensitivity);
             lookSensitivitySlider.onValueChanged.AddListener(OnLookSliderChanged);
         }
 
@@ -71,7 +89,7 @@ public class SensitivityManager : MonoBehaviour
         {
             fireSensitivitySlider.minValue = fireMin;
             fireSensitivitySlider.maxValue = fireMax;
-            fireSensitivitySlider.value = FireSensitivity;
+            fireSensitivitySlider.SetValueWithoutNotify(FireSensitivity);
             fireSensitivitySlider.onValueChanged.AddListener(OnFireSliderChanged);
         }
     }
