@@ -26,6 +26,33 @@ public class SensitivitySettings : MonoBehaviour
         fireSensitivity = Mathf.Max(0.01f, value);
     }
 
+    /// <summary>
+    /// Pastikan ada satu instance SensitivitySettings yang persisten
+    /// (tidak ikut hancur bersama Pause UI).
+    /// </summary>
+    public static SensitivitySettings EnsureInstance()
+    {
+        if (Instance != null)
+            return Instance;
+
+#if UNITY_2023_1_OR_NEWER
+        var found = Object.FindFirstObjectByType<SensitivitySettings>();
+#else
+        var found = Object.FindObjectOfType<SensitivitySettings>();
+#endif
+        if (found != null)
+        {
+            Instance = found;
+            if (found.transform.parent == null)
+                DontDestroyOnLoad(found.gameObject);
+            return found;
+        }
+
+        var go = new GameObject("SensitivitySettings");
+        DontDestroyOnLoad(go);
+        return go.AddComponent<SensitivitySettings>();
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -35,6 +62,10 @@ public class SensitivitySettings : MonoBehaviour
         }
 
         Instance = this;
+
+        // Persist hanya jika GameObject ini adalah root (syarat DontDestroyOnLoad).
+        if (transform.parent == null)
+            DontDestroyOnLoad(gameObject);
     }
 
     private void OnDestroy()

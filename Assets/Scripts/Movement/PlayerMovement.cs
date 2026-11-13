@@ -44,6 +44,9 @@ public class PlayerMovement : MonoBehaviour
 
         if (pcInput == null)
             pcInput = GetComponent<PCInput>();
+
+        // Pastikan penyimpan sensitivitas persisten tersedia.
+        SensitivitySettings.EnsureInstance();
     }
 
     private void Update()
@@ -161,9 +164,13 @@ public class PlayerMovement : MonoBehaviour
         if (lookInput.sqrMagnitude < 0.0001f)
             return;
 
-        float sensitivity = SensitivitySettings.Instance != null
-            ? SensitivitySettings.Instance.LookSensitivity
-            : 1f;
+        var settings = SensitivitySettings.Instance;
+        if (settings == null)
+            settings = SensitivitySettings.EnsureInstance();
+
+        float sensitivity = settings != null
+            ? settings.LookSensitivity
+            : 6f;
 
         // Input mouse PC adalah delta per frame, jadi tetap dikalikan deltaTime.
         // Input sentuh mobile adalah delta posisi sentuhan (PointerEventData.delta)

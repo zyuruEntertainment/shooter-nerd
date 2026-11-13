@@ -231,8 +231,12 @@ public class ArcadeWeaponController : MonoBehaviour
             return;
         }
 
-        float fireSensitivity = SensitivitySettings.Instance != null
-            ? SensitivitySettings.Instance.FireSensitivity
+        var sensSettings = SensitivitySettings.Instance;
+        if (sensSettings == null)
+            sensSettings = SensitivitySettings.EnsureInstance();
+
+        float fireSensitivity = sensSettings != null
+            ? sensSettings.FireSensitivity
             : 1f;
 
         float interval = fireInterval / Mathf.Max(0.01f, fireSensitivity);

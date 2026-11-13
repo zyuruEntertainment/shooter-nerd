@@ -40,10 +40,8 @@ public class SensitivityManager : MonoBehaviour
 
         Instance = this;
 
-        // Pastikan ada SensitivitySettings agar PlayerMovement/ArcadeWeaponController
-        // tetap bisa membaca nilai sensitivitas.
-        if (SensitivitySettings.Instance == null)
-            gameObject.AddComponent<SensitivitySettings>();
+        // Ambil/buat instance persisten, bukan child dari Pause UI.
+        SensitivitySettings.EnsureInstance();
     }
 
     private void Start()
@@ -65,9 +63,9 @@ public class SensitivityManager : MonoBehaviour
             FireSensitivity = Mathf.Clamp(defaultFire, fireMin, fireMax);
         }
 
-        // Sinkronkan ke SensitivitySettings (pastikan instance ada).
-        if (SensitivitySettings.Instance == null && gameObject != null)
-            gameObject.AddComponent<SensitivitySettings>();
+        // Sinkronkan ke SensitivitySettings persisten.
+        if (SensitivitySettings.Instance == null)
+            SensitivitySettings.EnsureInstance();
 
         if (SensitivitySettings.Instance != null)
         {
