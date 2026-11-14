@@ -134,6 +134,10 @@ public class CombatHealth : MonoBehaviour, IDamageable
                 Debug.Log($"[KillReward] Bot mendapatkan +{reward} credits dari kill {gameObject.name}");
             }
 
+            // Tambah poin tim pembunuh.
+            if (PointManager.Instance != null)
+                PointManager.Instance.AddKill(lastAttacker.Team);
+
             // Tampilkan teks kill reward via KillRewardManager.
             if (KillRewardManager.Instance != null)
             {
