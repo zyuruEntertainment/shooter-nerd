@@ -144,11 +144,8 @@ public class BotController : MonoBehaviour
             if (eyePoint != null) vision.SetEye(eyePoint);
         }
 
-        if (playerTarget == null)
-        {
-            GameObject p = GameObject.FindGameObjectWithTag("Player");
-            if (p != null) playerTarget = p.transform;
-        }
+        // Target musuh ditentukan berdasarkan tim, bukan tag Player.
+        AcquireTarget();
 
         if (vision != null) vision.SetTarget(playerTarget);
 
@@ -211,6 +208,13 @@ public class BotController : MonoBehaviour
         if (settings == null) return;
 
         float dt = Time.deltaTime;
+
+        // Re-acquire target musuh jika target null/mati.
+        CombatHealth targetHealth = playerTarget != null ? playerTarget.GetComponent<CombatHealth>() : null;
+        if (playerTarget == null || (targetHealth != null && targetHealth.IsDead))
+            AcquireTarget();
+        if (vision != null && vision.TargetTransform != playerTarget)
+            vision.SetTarget(playerTarget);
 
         // Track kecepatan pemain untuk prediksi (leading).
         TrackPlayerVelocity(dt);
@@ -463,6 +467,20 @@ public class BotController : MonoBehaviour
         Quaternion targetRot = Quaternion.LookRotation(toTracked.normalized, Vector3.up);
         transform.rotation = Quaternion.RotateTowards(
             transform.rotation, targetRot, rotSpeed * dt);
+    }
+
+    private void AcquireTarget()
+    {
+        if (health == null) return;
+
+        Team selfTeam = health.Team;
+        if (selfTeam == Team.None) selfTeam = Team.TeamB;
+
+        CombatHealth enemy = TeamRegistry.FindNearestEnemy(transform.position, selfTeam);
+        playerTarget = enemy != null ? enemy.transform : null;
+
+        if (vision != null) vision.SetTarget(playerTarget);
+        if (playerTarget != null) lastPlayerPosition = playerTarget.position;
     }
 
     private void TrackPlayerVelocity(float dt)

@@ -12,6 +12,7 @@ public class BotVision : MonoBehaviour
     private bool hasLastSeen;
 
     public bool CanSeePlayer { get; private set; }
+    public Transform TargetTransform => target;
     public Vector3 LastKnownPosition => lastSeenPosition;
     public bool HasLastKnown => hasLastSeen && (Time.time - lastSeenTime) <= (settings != null ? settings.MemoryDuration : 3f);
     public float LastSeenTime => lastSeenTime;

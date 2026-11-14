@@ -15,6 +15,12 @@ public class CombatHealth : MonoBehaviour, IDamageable
     [Header("Health")]
     [SerializeField, Min(1f)] private float maxHealth = 100f;
 
+    [Header("Team")]
+    [Tooltip("Tim objek ini. None = tidak tergabung tim (damage normal).")]
+    [SerializeField] private Team team = Team.None;
+
+    public Team Team => team;
+
     public float CurrentHealth { get; private set; }
     public float MaxHealth => maxHealth;
     public bool IsDead => CurrentHealth <= 0f;
@@ -30,7 +36,20 @@ public class CombatHealth : MonoBehaviour, IDamageable
 
     private void Awake()
     {
+        // Default tim berdasarkan tag agar tidak perlu edit prefab/scene.
+        if (team == Team.None)
+        {
+            if (CompareTag("Player")) team = Team.TeamA;
+            else if (CompareTag("Enemy")) team = Team.TeamB;
+        }
+
         CurrentHealth = maxHealth;
+        TeamRegistry.Register(this);
+    }
+
+    private void OnDestroy()
+    {
+        TeamRegistry.Unregister(this);
     }
 
     public void TakeDamage(float amount)
@@ -42,6 +61,14 @@ public class CombatHealth : MonoBehaviour, IDamageable
     {
         if (IsDead || amount <= 0f)
             return;
+
+        // Cegah friendly fire: tim yang sama tidak saling damage.
+        if (attacker != null && attacker != this &&
+            attacker.Team != Team.None && team != Team.None &&
+            attacker.Team == team)
+        {
+            return;
+        }
 
         if (attacker != null && attacker != this)
             lastAttacker = attacker;

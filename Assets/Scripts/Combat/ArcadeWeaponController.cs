@@ -381,8 +381,13 @@ public class ArcadeWeaponController : MonoBehaviour
             HitZone zone = hit.collider.GetComponentInParent<HitZone>();
             CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
 
+            CombatHealth ownHealth = GetComponent<CombatHealth>();
+            bool isEnemyTeam = health != null && health != ownHealth &&
+                (ownHealth == null || ownHealth.Team == Team.None ||
+                 health.Team == Team.None || ownHealth.Team != health.Team);
+
             targetingEnemy = zone != null ||
-                (health != null && health != GetComponent<CombatHealth>());
+                (health != null && health != ownHealth && isEnemyTeam);
         }
 
         crosshair.color = targetingEnemy ? targetCrosshairColor : normalCrosshairColor;
