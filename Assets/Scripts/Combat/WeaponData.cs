@@ -17,6 +17,16 @@ public class WeaponData : ScriptableObject
     [SerializeField, Min(0)] private int startingMagazineAmmo = 6;
     [SerializeField, Min(0.01f)] private float shootingAnimationDuration = 0.2f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip shootSound;
+    [SerializeField] private AudioClip reloadSound;
+
+    [Header("Reload")]
+    [SerializeField, Min(0f)] private float reloadTime = 1.5f;
+
+    [Header("Model")]
+    [SerializeField] private GameObject weaponModel;
+
     public string WeaponName => weaponName;
     public int Price => price;
     public Sprite Icon => icon;
@@ -27,4 +37,8 @@ public class WeaponData : ScriptableObject
     public int StartingReserveAmmo => startingReserveAmmo;
     public int StartingMagazineAmmo => startingMagazineAmmo;
     public float ShootingAnimationDuration => shootingAnimationDuration;
+    public AudioClip ShootSound => shootSound;
+    public AudioClip ReloadSound => reloadSound;
+    public float ReloadTime => reloadTime;
+    public GameObject WeaponModel => weaponModel;
 }

@@ -22,3 +22,6 @@ MonoBehaviour:
   startingReserveAmmo: 156
   startingMagazineAmmo: 36
   shootingAnimationDuration: 0.2
+  shootSound: {fileID: 8300000, guid: 8d2f02a3162c3c844a9da13920fbec42, type: 3}
+  reloadSound: {fileID: 8300000, guid: 8c09dec99d718e2418fece136ec3d5c8, type: 3}
+  reloadTime: 1

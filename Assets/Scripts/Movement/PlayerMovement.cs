@@ -27,12 +27,19 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PCInput pcInput;
     [SerializeField] private MobileInput mobileInput;
     [SerializeField] private FireJoystick fireJoystick;
+    [SerializeField] private PlayerCrouch playerCrouch;
+
+    [Header("Crouch Camera")]
+    [SerializeField, Min(0f)] private float crouchCameraHeightReduction = 0.5f;
+    [SerializeField, Min(0f)] private float crouchCameraLerpSpeed = 10f;
 
     private CharacterController controller;
     private PlayerPhysics playerPhysics;
     private PlayerDash playerDash;
 
     private float cameraPitch;
+    private Vector3 originalCameraLocalPosition;
+    private bool hasOriginalCameraLocalPosition;
 
     private void Awake()
     {
@@ -45,6 +52,15 @@ public class PlayerMovement : MonoBehaviour
 
         if (pcInput == null)
             pcInput = GetComponent<PCInput>();
+
+        if (playerCrouch == null)
+            playerCrouch = GetComponent<PlayerCrouch>();
+
+        if (cameraTransform != null)
+        {
+            originalCameraLocalPosition = cameraTransform.localPosition;
+            hasOriginalCameraLocalPosition = true;
+        }
 
         if (fireJoystick == null)
             fireJoystick = FindAnyObjectByType<FireJoystick>();
@@ -97,6 +113,25 @@ public class PlayerMovement : MonoBehaviour
 
         RotatePlayer(lookInput, lookFromMobile, fireLookInput);
         MovePlayer(moveInput);
+        UpdateCameraHeight();
+    }
+
+    private void UpdateCameraHeight()
+    {
+        if (cameraTransform == null || !hasOriginalCameraLocalPosition)
+            return;
+
+        bool isCrouching = playerCrouch != null && playerCrouch.IsCrouching;
+        float targetY = originalCameraLocalPosition.y -
+            (isCrouching ? crouchCameraHeightReduction : 0f);
+
+        Vector3 pos = cameraTransform.localPosition;
+        pos.y = Mathf.MoveTowards(
+            pos.y,
+            targetY,
+            crouchCameraLerpSpeed * Time.deltaTime
+        );
+        cameraTransform.localPosition = pos;
     }
 
     private void MovePlayer(Vector2 input)

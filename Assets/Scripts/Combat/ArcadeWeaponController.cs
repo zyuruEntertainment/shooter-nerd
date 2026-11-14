@@ -20,6 +20,13 @@ public class ArcadeWeaponController : MonoBehaviour
     [SerializeField] private TMP_Text ammoText;
     [SerializeField] private PlayerSpriteController spriteController;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+
+    [Header("Model")]
+    [SerializeField] private Transform weaponModelParent;
+    private GameObject currentWeaponModel;
+
     [Header("Input")]
     [Tooltip("Jika true, senjata otomatis menembak/reload dari input mouse (untuk player). Bot harus false agar tidak ikut input global.")]
     [SerializeField] private bool autoFireFromInput = true;
@@ -35,6 +42,12 @@ public class ArcadeWeaponController : MonoBehaviour
 
     private int currentAmmo;
     private int reserveAmmo;
+    private AudioClip shootSound;
+    private AudioClip reloadSound;
+
+    private float reloadTime = 1f;
+    private bool isReloading;
+    private float reloadTimer;
     private float nextFireTime;
     private bool mobileFireHeld;
     private bool loggedNoWeapon;
@@ -69,6 +82,19 @@ public class ArcadeWeaponController : MonoBehaviour
         if (spriteController == null)
             spriteController = GetComponent<PlayerSpriteController>();
 
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        if (weaponModelParent == null)
+        {
+            var anchor = GameObject.Find("WeaponModelAnchor");
+            if (anchor != null)
+                weaponModelParent = anchor.transform;
+        }
+
         KeepCrosshairCentered();
 
         if (aimCamera == null)
@@ -89,6 +115,17 @@ public class ArcadeWeaponController : MonoBehaviour
         reserveAmmo = 0;
         nextFireTime = 0f;
         HasWeapon = false;
+        shootSound = null;
+        reloadSound = null;
+        reloadTime = 0f;
+
+        if (currentWeaponModel != null)
+        {
+            Destroy(currentWeaponModel);
+            currentWeaponModel = null;
+        }
+        isReloading = false;
+        reloadTimer = 0f;
 
         UpdateAmmoUI();
     }
@@ -107,6 +144,28 @@ public class ArcadeWeaponController : MonoBehaviour
         fireInterval = data.FireInterval;
         range = data.Range;
         shootingAnimationDuration = data.ShootingAnimationDuration;
+        shootSound = data.ShootSound;
+        reloadSound = data.ReloadSound;
+        reloadTime = data.ReloadTime;
+
+        // Batalkan reload yang sedang berjalan saat ganti senjata.
+        isReloading = false;
+        reloadTimer = 0f;
+
+        // Tampilkan model senjata di anchor (jika ada).
+        if (currentWeaponModel != null)
+        {
+            Destroy(currentWeaponModel);
+            currentWeaponModel = null;
+        }
+
+        if (weaponModelParent != null && data.WeaponModel != null)
+        {
+            currentWeaponModel = Instantiate(data.WeaponModel, weaponModelParent);
+            currentWeaponModel.transform.localPosition = Vector3.zero;
+            currentWeaponModel.transform.localRotation = Quaternion.identity;
+            currentWeaponModel.transform.localScale = Vector3.one;
+        }
 
         currentAmmo = Mathf.Clamp(data.StartingMagazineAmmo, 1, magazineSize);
 
@@ -189,6 +248,14 @@ public class ArcadeWeaponController : MonoBehaviour
         KeepCrosshairCentered();
         UpdateCrosshair();
 
+        // Progres reload (jika sedang reload).
+        if (isReloading)
+        {
+            reloadTimer -= Time.deltaTime;
+            if (reloadTimer <= 0f)
+                FinishReload();
+        }
+
         bool mouseHeld = autoFireFromInput && Mouse.current != null && Mouse.current.leftButton.isPressed;
 
         if (mouseHeld || mobileFireHeld)
@@ -229,7 +296,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Fire()
     {
-        if (!HasWeapon || currentAmmo <= 0 || aimCamera == null)
+        if (!HasWeapon || currentAmmo <= 0 || aimCamera == null || isReloading)
         {
             if (!HasWeapon && aimCamera != null && !loggedNoWeapon)
             {
@@ -249,6 +316,9 @@ public class ArcadeWeaponController : MonoBehaviour
 
         UpdateAmmoUI();
         PlayShootingAnimation();
+
+        if (audioSource != null && shootSound != null)
+            audioSource.PlayOneShot(shootSound);
 
         if (!TryGetTarget(out RaycastHit hit))
             return;
@@ -300,12 +370,41 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Reload()
     {
-        if (currentAmmo >= magazineSize || reserveAmmo <= 0)
+        if (!HasWeapon || isReloading || currentAmmo >= magazineSize || reserveAmmo <= 0)
             return;
+
+        // Jika waktu reload 0, langsung selesai.
+        if (reloadTime <= 0f)
+        {
+            if (audioSource != null && reloadSound != null)
+                audioSource.PlayOneShot(reloadSound);
+            FinishReload();
+            return;
+        }
+
+        isReloading = true;
+        reloadTimer = reloadTime;
+
+        if (audioSource != null && reloadSound != null)
+            audioSource.PlayOneShot(reloadSound);
+    }
+
+    /// <summary>Selesaikan reload: pindahkan ammo dari reserve ke magazine.</summary>
+    public void FinishReload()
+    {
+        if (!HasWeapon || currentAmmo >= magazineSize || reserveAmmo <= 0)
+        {
+            isReloading = false;
+            reloadTimer = 0f;
+            return;
+        }
 
         int transferred = Mathf.Min(magazineSize - currentAmmo, reserveAmmo);
         currentAmmo += transferred;
         reserveAmmo -= transferred;
+
+        isReloading = false;
+        reloadTimer = 0f;
 
         UpdateAmmoUI();
         SyncAmmoWithSiblings();
@@ -316,6 +415,9 @@ public class ArcadeWeaponController : MonoBehaviour
             WeaponManager.Instance.SetReserveAmmo(WeaponManager.Instance.EquippedWeapon, reserveAmmo);
         }
     }
+
+    /// <summary>Apakah sedang dalam proses reload.</summary>
+    public bool IsReloading => isReloading;
 
     private void UpdateAmmoUI()
     {

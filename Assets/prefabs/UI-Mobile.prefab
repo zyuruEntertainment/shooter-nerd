@@ -409,7 +409,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 616777548255012019}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 9000000000000000001, guid: b35155ae2c192d74c898ae8e4870f02d, type: 3}
+        m_TargetAssemblyTypeName: WeaponSwitcher, Assembly-CSharp
+        m_MethodName: SwitchWeapon
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1181007897050954733
 GameObject:
   m_ObjectHideFlags: 0
