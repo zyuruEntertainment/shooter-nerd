@@ -39,8 +39,11 @@ public class CombatHealth : MonoBehaviour, IDamageable
         // Default tim berdasarkan tag agar tidak perlu edit prefab/scene.
         if (team == Team.None)
         {
-            if (CompareTag("Player")) team = Team.TeamA;
-            else if (CompareTag("Enemy")) team = Team.TeamB;
+            string t = tag.ToLowerInvariant();
+            if (t == "player" || t == "ally" || t == "teama")
+                team = Team.TeamA;
+            else if (t == "enemy" || t == "teamb")
+                team = Team.TeamB;
         }
 
         CurrentHealth = maxHealth;
