@@ -22,6 +22,9 @@ public class ArcadeWeaponController : MonoBehaviour
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
+    [SerializeField, Range(0f, 1f)] private float shootVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float reloadVolume = 1f;
+    [SerializeField, Min(0.1f)] private float soundMaxDistance = 40f;
 
     [Header("Model")]
     [SerializeField] private Transform weaponModelParent;
@@ -93,6 +96,10 @@ public class ArcadeWeaponController : MonoBehaviour
 
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
+
+        // Volume diatur manual berdasarkan jarak ke kamera player.
+        if (audioSource != null)
+            audioSource.spatialBlend = 0f;
 
         if (weaponModelParent == null)
         {
@@ -348,8 +355,7 @@ public class ArcadeWeaponController : MonoBehaviour
         UpdateAmmoUI();
         PlayShootingAnimation();
 
-        if (audioSource != null && shootSound != null)
-            audioSource.PlayOneShot(shootSound);
+        PlayWeaponSound(shootSound, shootVolume);
 
         if (!TryGetTarget(out RaycastHit hit))
             return;
@@ -412,8 +418,7 @@ public class ArcadeWeaponController : MonoBehaviour
         // Jika waktu reload 0, langsung selesai.
         if (reloadTime <= 0f)
         {
-            if (audioSource != null && reloadSound != null)
-                audioSource.PlayOneShot(reloadSound);
+            PlayWeaponSound(reloadSound, reloadVolume);
             FinishReload();
             return;
         }
@@ -422,8 +427,26 @@ public class ArcadeWeaponController : MonoBehaviour
         reloadTimer = reloadTime;
         targetReloadOffset = -reloadModelDrop;
 
-        if (audioSource != null && reloadSound != null)
-            audioSource.PlayOneShot(reloadSound);
+        PlayWeaponSound(reloadSound, reloadVolume);
+    }
+
+    /// <summary>Putar sound dengan volume berdasarkan jarak ke kamera player.</summary>
+    private void PlayWeaponSound(AudioClip clip, float baseVolume)
+    {
+        if (audioSource == null || clip == null)
+            return;
+
+        float volume = Mathf.Clamp01(baseVolume);
+
+        Camera cam = Camera.main;
+        if (cam != null && soundMaxDistance > 0f)
+        {
+            float dist = Vector3.Distance(cam.transform.position, transform.position);
+            float factor = Mathf.Clamp01(1f - (dist / soundMaxDistance));
+            volume *= factor;
+        }
+
+        audioSource.PlayOneShot(clip, volume);
     }
 
     /// <summary>Selesaikan reload: pindahkan ammo dari reserve ke magazine.</summary>
