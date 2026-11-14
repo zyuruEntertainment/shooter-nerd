@@ -62,6 +62,16 @@ public class PlayerWallet : MonoBehaviour
         SaveSystem.Save();
     }
 
+    /// <summary>Reset saldo ke nilai awal (untuk round baru).</summary>
+    public void ResetCredits()
+    {
+        int saldoAwal = startingCredits > 0 ? startingCredits : 2500;
+        Credits = saldoAwal;
+        OnCreditsChanged?.Invoke(Credits);
+        SaveSystem.currentData.credits = Credits;
+        SaveSystem.Save();
+    }
+
     private void OnDestroy()
     {
         if (Instance == this)

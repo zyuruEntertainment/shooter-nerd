@@ -48,6 +48,17 @@ public class PointManager : MonoBehaviour
         UpdateUI();
     }
 
+    /// <summary>Reset poin round (untuk round baru).</summary>
+    public void ResetScores()
+    {
+        teamAPoints = 0;
+        teamBPoints = 0;
+        UpdateUI();
+    }
+
+    public int TeamAScore => teamAPoints;
+    public int TeamBScore => teamBPoints;
+
     private void UpdateUI()
     {
         if (teamAPointsText != null)

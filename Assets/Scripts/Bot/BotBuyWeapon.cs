@@ -408,6 +408,20 @@ public class BotBuyWeapon : MonoBehaviour
         Debug.Log($"[BotBuyWeapon] {gameObject.name} >>> (fallback) BELI AMMO +{fallbackAmmoAmount} untuk {targetWeapon.WeaponName}. Sisa kredit {Credits}.");
     }
 
+    /// <summary>Reset inventory bot ke kondisi awal (untuk round baru).</summary>
+    public void ResetInventory()
+    {
+        ownedWeapons.Clear();
+        reserveAmmoByWeapon.Clear();
+        currentAmmoByWeapon.Clear();
+        currentWeaponIndex = -1;
+        Credits = startingCredits;
+        hasAttemptedInitialBuy = false;
+
+        if (weaponController != null)
+            weaponController.ClearWeapon();
+    }
+
     /// <summary>Tambah kredit bot (opsional, misal setelah kill).</summary>
     public void AddCredits(int amount)
     {

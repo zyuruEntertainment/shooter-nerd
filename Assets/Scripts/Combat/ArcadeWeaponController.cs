@@ -334,7 +334,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Fire()
     {
-        if (!HasWeapon || currentAmmo <= 0 || aimCamera == null || isReloading)
+        if (!MatchManager.ShootingEnabled || !HasWeapon || currentAmmo <= 0 || aimCamera == null || isReloading)
         {
             if (!HasWeapon && aimCamera != null && !loggedNoWeapon)
             {

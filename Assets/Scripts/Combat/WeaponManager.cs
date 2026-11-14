@@ -236,6 +236,24 @@ public class WeaponManager : MonoBehaviour
             weaponController.SetReserveAmmo(reserveAmmoByWeapon[weapon]);
     }
 
+    /// <summary>Reset inventory senjata ke kondisi awal (untuk round baru).</summary>
+    public void ResetInventory()
+    {
+        ownedWeapons.Clear();
+        reserveAmmoByWeapon.Clear();
+        currentAmmoByWeapon.Clear();
+        EquippedWeapon = null;
+
+        if (weaponController != null)
+            weaponController.ClearWeapon();
+
+        var controllers = GetComponents<ArcadeWeaponController>();
+        foreach (var ctrl in controllers)
+            ctrl.ClearWeapon();
+
+        SyncAndSaveOwnership();
+    }
+
     private void OnDestroy()
     {
         if (Instance == this)
