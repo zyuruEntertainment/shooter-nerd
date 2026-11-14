@@ -25,8 +25,8 @@ public class FloatingRotator : MonoBehaviour
 
     private void Update()
     {
-        // Putar di sumbu Y.
-        transform.Rotate(0f, rotationSpeed * Time.deltaTime, 0f, Space.Self);
+        // Putar di sumbu Y (world space agar tidak terpengaruh rotasi objek).
+        transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
 
         // Terombang-ambing naik-turun.
         float offsetY = Mathf.Sin(Time.time * floatFrequency * Mathf.PI * 2f) * floatAmplitude;
