@@ -1117,6 +1117,7 @@ MonoBehaviour:
   spriteController: {fileID: 151998545}
   audioSource: {fileID: 0}
   weaponModelParent: {fileID: 0}
+  reloadModelDrop: 0.15
   autoFireFromInput: 1
   hitboxMask:
     serializedVersion: 2
@@ -2886,6 +2887,10 @@ PrefabInstance:
       propertyPath: crosshair
       value: 
       objectReference: {fileID: 9218816580816052320}
+    - target: {fileID: 74464650883802570, guid: be53475310485ba4b803e84548afc7b2, type: 3}
+      propertyPath: reloadModelDrop
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 74464650883802570, guid: be53475310485ba4b803e84548afc7b2, type: 3}
       propertyPath: weaponModelParent
       value: 
