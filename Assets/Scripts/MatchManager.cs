@@ -23,10 +23,10 @@ public class MatchManager : MonoBehaviour
     [SerializeField, Min(0.1f)] private float nextRoundBannerDuration = 2f;
 
     [Header("Banners")]
-    [SerializeField] private RectTransform roundBannerRect;
-    [SerializeField] private TMP_Text roundBannerText;
+    [SerializeField] private RectTransform winBannerRect;
+    [SerializeField] private RectTransform loseBannerRect;
     [SerializeField] private RectTransform nextRoundBannerRect;
-    [SerializeField] private TMP_Text nextRoundBannerText;
+    [SerializeField] private TMP_Text roundText;
 
     [Header("Result")]
     [SerializeField] private string resultSceneName = "Result";
@@ -35,6 +35,7 @@ public class MatchManager : MonoBehaviour
     private int teamBWins;
     private bool roundEnding;
     private bool matchEnding;
+    private int currentRound = 1;
 
     private void Awake()
     {
@@ -45,6 +46,11 @@ public class MatchManager : MonoBehaviour
         }
         Instance = this;
         ShootingEnabled = true;
+    }
+
+    private void Start()
+    {
+        UpdateRoundText();
     }
 
     private void OnDestroy()
@@ -83,15 +89,17 @@ public class MatchManager : MonoBehaviour
 
     private IEnumerator RoundEndRoutine(Team winner, bool matchWin, string msg)
     {
-        // Banner hasil round (smooth dari atas ke tengah).
-        yield return ShowBanner(roundBannerRect, roundBannerText, msg, roundEndDelay);
+        RectTransform resultBanner = (winner == Team.TeamA) ? winBannerRect : loseBannerRect;
+        string bannerMsg = (winner == Team.TeamA) ? "VICTORY" : "DEFEAT";
+
+        // Banner win/lose selama 3 detik.
+        yield return ShowBanner(resultBanner, bannerMsg, roundEndDelay);
 
         if (matchWin)
         {
             matchEnding = true;
-            // Banner kemenangan final (reuse round banner).
-            string finalMsg = (winner == Team.TeamA) ? "VICTORY" : "DEFEAT";
-            yield return ShowBanner(roundBannerRect, roundBannerText, finalMsg, roundEndDelay);
+            // Banner final (win/lose) lalu pindah scene result.
+            yield return ShowBanner(resultBanner, bannerMsg, roundEndDelay);
 
             if (!string.IsNullOrEmpty(resultSceneName))
                 SceneManager.LoadScene(resultSceneName);
@@ -99,15 +107,21 @@ public class MatchManager : MonoBehaviour
         else
         {
             ResetRound();
+            currentRound++;
+            UpdateRoundText();
 
             // Banner next round.
-            RectTransform rect = nextRoundBannerRect != null ? nextRoundBannerRect : roundBannerRect;
-            TMP_Text txt = nextRoundBannerText != null ? nextRoundBannerText : roundBannerText;
-            yield return ShowBanner(rect, txt, "NEXT ROUND", nextRoundBannerDuration);
+            yield return ShowBanner(nextRoundBannerRect, "NEXT ROUND", nextRoundBannerDuration);
 
             roundEnding = false;
             ShootingEnabled = true;
         }
+    }
+
+    private void UpdateRoundText()
+    {
+        if (roundText != null)
+            roundText.text = $"Round {currentRound}";
     }
 
     private void ResetRound()
@@ -134,11 +148,14 @@ public class MatchManager : MonoBehaviour
             PointManager.Instance.ResetScores();
     }
 
-    private IEnumerator ShowBanner(RectTransform rect, TMP_Text text, string message, float hold)
+    private IEnumerator ShowBanner(RectTransform rect, string message, float hold)
     {
         if (rect == null) yield break;
 
+        // Set text jika ada TMP_Text di dalam banner.
+        TMP_Text text = rect.GetComponentInChildren<TMP_Text>();
         if (text != null) text.text = message;
+
         rect.gameObject.SetActive(true);
 
         Vector2 center = Vector2.zero;
