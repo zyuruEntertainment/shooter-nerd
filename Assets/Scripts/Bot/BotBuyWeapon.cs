@@ -45,6 +45,8 @@ public class BotBuyWeapon : MonoBehaviour
     private readonly List<WeaponData> ownedWeapons = new List<WeaponData>();
     // Reserve ammo per senjata agar tidak hilang saat ganti senjata / beli ammo.
     private readonly Dictionary<WeaponData, int> reserveAmmoByWeapon = new Dictionary<WeaponData, int>();
+    // Current (magazine) ammo per senjata agar tidak reset saat ganti senjata.
+    private readonly Dictionary<WeaponData, int> currentAmmoByWeapon = new Dictionary<WeaponData, int>();
     private float buyTimer;
     private float ammoBuyTimer;
     private float switchTimer;
@@ -71,6 +73,7 @@ public class BotBuyWeapon : MonoBehaviour
         // Mulai dengan inventory kosong dan kredit 2500 setiap kali Play.
         ownedWeapons.Clear();
         reserveAmmoByWeapon.Clear();
+        currentAmmoByWeapon.Clear();
         Credits = startingCredits;
         currentWeaponIndex = -1;
 
@@ -168,9 +171,12 @@ public class BotBuyWeapon : MonoBehaviour
         {
             var weapon = affordable[0]; // beli yang termurah yang belum dimiliki
 
-            // Simpan reserve senjata sebelumnya agar tidak hilang.
+            // Simpan ammo senjata sebelumnya agar tidak hilang.
         if (CurrentWeapon != null && weaponController != null && weaponController.HasWeapon)
+        {
             reserveAmmoByWeapon[CurrentWeapon] = weaponController.ReserveAmmo;
+            currentAmmoByWeapon[CurrentWeapon] = weaponController.CurrentAmmo;
+        }
 
         // Kurangi kredit.
             Credits -= weapon.Price;
@@ -178,6 +184,7 @@ public class BotBuyWeapon : MonoBehaviour
             // Tambah ke inventory.
             ownedWeapons.Add(weapon);
         reserveAmmoByWeapon[weapon] = weapon.StartingReserveAmmo;
+        currentAmmoByWeapon[weapon] = weapon.StartingMagazineAmmo;
 
             // Terapkan ke ArcadeWeaponController (sama seperti player equip).
             weaponController.ApplyWeaponData(weapon);
@@ -325,26 +332,33 @@ public class BotBuyWeapon : MonoBehaviour
         if (index < 0 || index >= ownedWeapons.Count)
             return;
 
-        // Simpan reserve senjata sebelumnya agar tidak hilang.
+        // Simpan ammo senjata sebelumnya agar tidak hilang.
         if (CurrentWeapon != null && weaponController != null && weaponController.HasWeapon)
+        {
             reserveAmmoByWeapon[CurrentWeapon] = weaponController.ReserveAmmo;
+            currentAmmoByWeapon[CurrentWeapon] = weaponController.CurrentAmmo;
+        }
 
         currentWeaponIndex = index;
         var weapon = ownedWeapons[index];
 
         if (!reserveAmmoByWeapon.ContainsKey(weapon))
             reserveAmmoByWeapon[weapon] = weapon.StartingReserveAmmo;
+        if (!currentAmmoByWeapon.ContainsKey(weapon))
+            currentAmmoByWeapon[weapon] = weapon.StartingMagazineAmmo;
 
         if (weaponController != null)
         {
             weaponController.ApplyWeaponData(weapon);
+            weaponController.SetAmmo(currentAmmoByWeapon[weapon]);
             weaponController.SetReserveAmmo(reserveAmmoByWeapon[weapon]);
         }
 
-        // Pastikan ammo tidak nol saat ganti senjata.
-        if (weaponController != null && weaponController.CurrentAmmo <= 0)
+        // Pastikan ammo tidak nol saat ganti senjata (hanya jika belum pernah dipakai).
+        if (weaponController != null && weaponController.CurrentAmmo <= 0 && currentAmmoByWeapon[weapon] <= 0)
         {
             weaponController.SetAmmo(Mathf.Max(1, weapon.StartingMagazineAmmo));
+            currentAmmoByWeapon[weapon] = weaponController.CurrentAmmo;
         }
 
         Debug.Log($"[BotBuyWeapon] {gameObject.name} Ganti senjata ke: {weapon.WeaponName} (index {index}). HasWeapon={weaponController?.HasWeapon}, Ammo={weaponController.CurrentAmmo}/{weaponController?.ReserveAmmo}");

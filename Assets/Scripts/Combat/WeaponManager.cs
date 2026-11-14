@@ -20,6 +20,9 @@ public class WeaponManager : MonoBehaviour
     // Reserve ammo per senjata agar tidak saling berbagi antar senjata.
     private readonly Dictionary<WeaponData, int> reserveAmmoByWeapon = new Dictionary<WeaponData, int>();
 
+    // Current (magazine) ammo per senjata agar tidak reset saat ganti senjata.
+    private readonly Dictionary<WeaponData, int> currentAmmoByWeapon = new Dictionary<WeaponData, int>();
+
     public WeaponData EquippedWeapon { get; private set; }
     public IReadOnlyList<WeaponData> OwnedWeapons => ownedWeapons;
 
@@ -130,6 +133,13 @@ public class WeaponManager : MonoBehaviour
             return false;
         }
 
+        // Simpan state ammo senjata sebelumnya agar tidak hilang/reset saat ganti senjata.
+        if (EquippedWeapon != null && EquippedWeapon != weapon && weaponController.HasWeapon)
+        {
+            reserveAmmoByWeapon[EquippedWeapon] = weaponController.ReserveAmmo;
+            currentAmmoByWeapon[EquippedWeapon] = weaponController.CurrentAmmo;
+        }
+
         // Reset fire timer when switching weapons to avoid immediate fire on equip
         if (weaponController is ArcadeWeaponController awc)
         {
@@ -138,13 +148,16 @@ public class WeaponManager : MonoBehaviour
 
         EquippedWeapon = weapon;
 
-        // Simpan reserve awal jika belum ada.
+        // Simpan state awal jika belum ada.
         if (!reserveAmmoByWeapon.ContainsKey(weapon))
             reserveAmmoByWeapon[weapon] = weapon.StartingReserveAmmo;
+        if (!currentAmmoByWeapon.ContainsKey(weapon))
+            currentAmmoByWeapon[weapon] = weapon.StartingMagazineAmmo;
 
         weaponController.ApplyWeaponData(weapon);
 
-        // Terapkan reserve ammo khusus senjata ini.
+        // Terapkan ammo (magazine + reserve) khusus senjata ini.
+        weaponController.SetAmmo(currentAmmoByWeapon[weapon]);
         weaponController.SetReserveAmmo(reserveAmmoByWeapon[weapon]);
 
         SyncAndSaveOwnership();
@@ -159,6 +172,8 @@ public class WeaponManager : MonoBehaviour
             ownedWeapons.Add(weapon);
             if (!reserveAmmoByWeapon.ContainsKey(weapon))
                 reserveAmmoByWeapon[weapon] = weapon.StartingReserveAmmo;
+            if (!currentAmmoByWeapon.ContainsKey(weapon))
+                currentAmmoByWeapon[weapon] = weapon.StartingMagazineAmmo;
             OnOwnershipChanged?.Invoke();
             SyncAndSaveOwnership();
         }
