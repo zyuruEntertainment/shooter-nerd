@@ -161,10 +161,8 @@ public class ArcadeWeaponController : MonoBehaviour
 
         if (weaponModelParent != null && data.WeaponModel != null)
         {
+            // Gunakan transform bawaan prefab (posisi/rotasi/skala yang sudah di-set di prefab).
             currentWeaponModel = Instantiate(data.WeaponModel, weaponModelParent);
-            currentWeaponModel.transform.localPosition = Vector3.zero;
-            currentWeaponModel.transform.localRotation = Quaternion.identity;
-            currentWeaponModel.transform.localScale = Vector3.one;
         }
 
         currentAmmo = Mathf.Clamp(data.StartingMagazineAmmo, 1, magazineSize);
