@@ -25,7 +25,10 @@ public class ArcadeWeaponController : MonoBehaviour
 
     [Header("Model")]
     [SerializeField] private Transform weaponModelParent;
+    [SerializeField, Min(0f)] private float reloadModelDrop = 0.15f;
     private GameObject currentWeaponModel;
+    private Vector3 weaponModelParentOriginalLocalPos;
+    private bool hasWeaponModelParentOriginal;
 
     [Header("Input")]
     [Tooltip("Jika true, senjata otomatis menembak/reload dari input mouse (untuk player). Bot harus false agar tidak ikut input global.")]
@@ -126,6 +129,7 @@ public class ArcadeWeaponController : MonoBehaviour
         }
         isReloading = false;
         reloadTimer = 0f;
+        hasWeaponModelParentOriginal = false;
 
         UpdateAmmoUI();
     }
@@ -249,6 +253,15 @@ public class ArcadeWeaponController : MonoBehaviour
         // Progres reload (jika sedang reload).
         if (isReloading)
         {
+            // Animasi sederhana: anchor turun selama reload, lalu kembali saat selesai.
+            if (weaponModelParent != null && hasWeaponModelParentOriginal && reloadTime > 0f)
+            {
+                float t = 1f - Mathf.Clamp01(reloadTimer / reloadTime);
+                Vector3 pos = weaponModelParentOriginalLocalPos;
+                pos.y -= reloadModelDrop * t;
+                weaponModelParent.localPosition = pos;
+            }
+
             reloadTimer -= Time.deltaTime;
             if (reloadTimer <= 0f)
                 FinishReload();
@@ -371,6 +384,13 @@ public class ArcadeWeaponController : MonoBehaviour
         if (!HasWeapon || isReloading || currentAmmo >= magazineSize || reserveAmmo <= 0)
             return;
 
+        // Simpan posisi awal anchor untuk animasi reload.
+        if (weaponModelParent != null)
+        {
+            weaponModelParentOriginalLocalPos = weaponModelParent.localPosition;
+            hasWeaponModelParentOriginal = true;
+        }
+
         // Jika waktu reload 0, langsung selesai.
         if (reloadTime <= 0f)
         {
@@ -403,6 +423,10 @@ public class ArcadeWeaponController : MonoBehaviour
 
         isReloading = false;
         reloadTimer = 0f;
+
+        // Kembalikan posisi anchor setelah reload.
+        if (weaponModelParent != null && hasWeaponModelParentOriginal)
+            weaponModelParent.localPosition = weaponModelParentOriginalLocalPos;
 
         UpdateAmmoUI();
         SyncAmmoWithSiblings();
