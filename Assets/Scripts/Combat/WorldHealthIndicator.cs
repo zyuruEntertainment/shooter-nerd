@@ -61,11 +61,36 @@ public class WorldHealthIndicator : MonoBehaviour
         int filled = Mathf.RoundToInt(ratio * barSegments);
         int empty = barSegments - filled;
 
-        string color = ratio > 0.5f
-            ? "#55E58A"
-            : ratio > 0.25f
-                ? "#FFD166"
-                : "#FF5C5C";
+        // Warna dasar berdasarkan tim, dengan gradasi sesuai ratio HP.
+        Team team = combatHealth != null ? combatHealth.Team : Team.None;
+        string color;
+        if (team == Team.TeamA)
+        {
+            // Biru: semakin rendah HP semakin gelap.
+            color = ratio > 0.5f
+                ? "#5AA9FF"
+                : ratio > 0.25f
+                    ? "#3B7BD9"
+                    : "#1F4F99";
+        }
+        else if (team == Team.TeamB)
+        {
+            // Merah: semakin rendah HP semakin gelap.
+            color = ratio > 0.5f
+                ? "#FF5C5C"
+                : ratio > 0.25f
+                    ? "#D94A4A"
+                    : "#992E2E";
+        }
+        else
+        {
+            // Fallback netral (lama).
+            color = ratio > 0.5f
+                ? "#55E58A"
+                : ratio > 0.25f
+                    ? "#FFD166"
+                    : "#FF5C5C";
+        }
 
         string bar =
             $"<color={color}>{new string('■', filled)}</color>" +
