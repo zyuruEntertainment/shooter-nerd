@@ -46,6 +46,11 @@ public class MatchManager : MonoBehaviour
         }
         Instance = this;
         ShootingEnabled = true;
+
+        // Sembunyikan banner di awal.
+        if (winBannerRect != null) winBannerRect.gameObject.SetActive(false);
+        if (loseBannerRect != null) loseBannerRect.gameObject.SetActive(false);
+        if (nextRoundBannerRect != null) nextRoundBannerRect.gameObject.SetActive(false);
     }
 
     private void Start()
