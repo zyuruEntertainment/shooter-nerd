@@ -25,11 +25,12 @@ public class FloatingRotator : MonoBehaviour
 
     private void Update()
     {
-        // Putar di sumbu Y (world space agar tidak terpengaruh rotasi objek).
-        transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
+        // Putar di sumbu Y (world space). Gunakan unscaledDeltaTime agar tetap berputar
+        // meski Time.timeScale = 0 (misalnya saat transisi ke scene Result).
+        transform.Rotate(Vector3.up, rotationSpeed * Time.unscaledDeltaTime, Space.World);
 
-        // Terombang-ambing naik-turun.
-        float offsetY = Mathf.Sin(Time.time * floatFrequency * Mathf.PI * 2f) * floatAmplitude;
+        // Terombang-ambing naik-turun. Gunakan unscaledTime agar gerakan tidak tergantung timeScale.
+        float offsetY = Mathf.Sin(Time.unscaledTime * floatFrequency * Mathf.PI * 2f) * floatAmplitude;
         Vector3 pos = startLocalPosition;
         pos.y += offsetY;
         transform.localPosition = pos;

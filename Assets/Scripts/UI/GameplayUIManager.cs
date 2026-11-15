@@ -143,6 +143,8 @@ public class GameplayUIManager : MonoBehaviour
         {
             if (pauseGameplay && shopIsOpen)
                 Time.timeScale = previousTimeScale;
+            else if (Time.timeScale == 0f)
+                Time.timeScale = 1f;
 
             Instance = null;
         }

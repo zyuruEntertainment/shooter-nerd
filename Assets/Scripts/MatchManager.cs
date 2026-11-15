@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -107,7 +107,20 @@ public class MatchManager : MonoBehaviour
             yield return ShowBanner(resultBanner, bannerMsg, roundEndDelay);
 
             if (!string.IsNullOrEmpty(resultSceneName))
+            {
+                // Pastikan waktu tidak dalam kondisi freeze saat pindah scene.
+                float timeScaleBefore = Time.timeScale;
+                Time.timeScale = 1f;
+                Debug.Log($"[MatchManager] timeScale sebelum pindah Result: {timeScaleBefore}, diatur ke 1f.");
+
+                SimpanHasilAkhir();
+                Debug.Log($"[MatchManager] Memuat scene Result: {resultSceneName}");
                 SceneManager.LoadScene(resultSceneName);
+            }
+            else
+            {
+                Debug.LogWarning("[MatchManager] resultSceneName kosong, tidak dapat memuat scene Result.");
+            }
         }
         else
         {
@@ -127,6 +140,69 @@ public class MatchManager : MonoBehaviour
     {
         if (roundText != null)
             roundText.text = $"Round {currentRound}";
+    }
+
+    /// <summary>
+    /// Ambil statistik akhir pemain (berdasarkan tag "player") dan simpan ke ResultData
+    /// agar dapat ditampilkan oleh ResultStatsUI di scene Result.
+    /// </summary>
+    private void SimpanHasilAkhir()
+    {
+        Debug.Log("[MatchManager] SimpanHasilAkhir dipanggil.");
+
+        CombatHealth playerHealth = null;
+
+        // Cari CombatHealth dengan tag "player".
+        var allHealth = FindObjectsByType<CombatHealth>();
+        Debug.Log($"[MatchManager] Ditemukan {allHealth.Length} CombatHealth di scene.");
+
+        foreach (CombatHealth h in allHealth)
+        {
+            if (h.CompareTag("player"))
+            {
+                playerHealth = h;
+                break;
+            }
+        }
+
+        // Fallback: ambil CombatHealth pertama yang ditemukan.
+        if (playerHealth == null)
+        {
+            playerHealth = FindObjectOfType<CombatHealth>();
+            if (playerHealth != null)
+                Debug.Log("[MatchManager] Tidak ada tag 'player', pakai fallback CombatHealth pertama.");
+            else
+                Debug.LogWarning("[MatchManager] Tidak ada CombatHealth sama sekali di scene!");
+        }
+
+        int kills = 0;
+        int deaths = 0;
+
+        if (playerHealth != null)
+        {
+            // Cari CombatStats di sama GameObject, parent, atau child.
+            CombatStats stats = playerHealth.GetComponent<CombatStats>();
+            if (stats == null)
+                stats = playerHealth.GetComponentInParent<CombatStats>();
+            if (stats == null)
+                stats = playerHealth.GetComponentInChildren<CombatStats>();
+
+            if (stats != null)
+            {
+                kills = stats.Kills;
+                deaths = stats.Deaths;
+                Debug.Log($"[MatchManager] Ditemukan CombatStats pada {stats.gameObject.name}: Kill={kills}, Death={deaths}");
+            }
+            else
+            {
+                Debug.LogWarning("[MatchManager] Pemain tidak memiliki component CombatStats (tidak ada di objek itu, parent, atau child)!");
+            }
+        }
+
+        string grade = ResultStatsUI.HitungGrade(kills, deaths);
+        ResultData.SetResult(kills, deaths, grade);
+
+        Debug.Log($"[MatchManager] Hasil akhir disimpan ke ResultData: Kill={kills}, Death={deaths}, Grade={grade}");
     }
 
     private void ResetRound()
@@ -171,20 +247,20 @@ public class MatchManager : MonoBehaviour
         float t = 0f;
         while (t < bannerAnimDuration)
         {
-            t += Time.deltaTime;
+            t += Time.unscaledDeltaTime;
             float k = Mathf.SmoothStep(0f, 1f, t / bannerAnimDuration);
             rect.anchoredPosition = Vector2.Lerp(top, center, k);
             yield return null;
         }
         rect.anchoredPosition = center;
 
-        yield return new WaitForSeconds(hold);
+        yield return new WaitForSecondsRealtime(hold);
 
         // Keluar ke atas.
         t = 0f;
         while (t < bannerAnimDuration)
         {
-            t += Time.deltaTime;
+            t += Time.unscaledDeltaTime;
             float k = Mathf.SmoothStep(0f, 1f, t / bannerAnimDuration);
             rect.anchoredPosition = Vector2.Lerp(center, top, k);
             yield return null;
@@ -193,3 +269,4 @@ public class MatchManager : MonoBehaviour
         rect.gameObject.SetActive(false);
     }
 }
+

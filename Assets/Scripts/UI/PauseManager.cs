@@ -156,8 +156,12 @@ public class PauseManager : MonoBehaviour
     {
         if (Instance == this)
         {
+            // Saat scene berubah (termasuk ke Result), pastikan timeScale kembali ke 1f
+            // agar scene baru tidak mewariskan kondisi freeze (timeScale = 0).
             if (isPaused && pauseTimeScale)
                 Time.timeScale = previousTimeScale;
+            else if (Time.timeScale == 0f)
+                Time.timeScale = 1f;
 
             if (pauseInstance != null)
                 Destroy(pauseInstance);
