@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -165,15 +166,16 @@ public class MatchManager : MonoBehaviour
 
         CombatHealth playerHealth = null;
 
-        // Cari CombatHealth dengan tag "player".
+        // Cari CombatHealth dengan tag "player" (case-insensitive karena Unity tag case-sensitive).
         var allHealth = FindObjectsByType<CombatHealth>();
         Debug.Log($"[MatchManager] Ditemukan {allHealth.Length} CombatHealth di scene.");
 
         foreach (CombatHealth h in allHealth)
         {
-            if (h.CompareTag("player"))
+            if (string.Equals(h.tag, "player", StringComparison.OrdinalIgnoreCase))
             {
                 playerHealth = h;
+                Debug.Log($"[MatchManager] Ditemukan pemain dengan tag '{h.tag}' pada {h.gameObject.name}");
                 break;
             }
         }
@@ -183,9 +185,13 @@ public class MatchManager : MonoBehaviour
         {
             playerHealth = FindObjectOfType<CombatHealth>();
             if (playerHealth != null)
-                Debug.Log("[MatchManager] Tidak ada tag 'player', pakai fallback CombatHealth pertama.");
+            {
+                Debug.Log($"[MatchManager] Tidak ada tag 'player', pakai fallback CombatHealth pertama: {playerHealth.gameObject.name} (tag={playerHealth.tag})");
+            }
             else
+            {
                 Debug.LogWarning("[MatchManager] Tidak ada CombatHealth sama sekali di scene!");
+            }
         }
 
         int kills = 0;
@@ -209,6 +215,9 @@ public class MatchManager : MonoBehaviour
             else
             {
                 Debug.LogWarning("[MatchManager] Pemain tidak memiliki component CombatStats (tidak ada di objek itu, parent, atau child)!");
+                // Debug: daftar semua komponen pada pemain untuk diagnosa
+                var components = playerHealth.GetComponents<Component>();
+                Debug.Log($"[MatchManager] Komponen pada {playerHealth.gameObject.name}: {string.Join(", ", components.Select(c => c.GetType().Name))}");
             }
         }
 
