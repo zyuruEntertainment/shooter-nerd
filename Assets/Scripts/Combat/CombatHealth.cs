@@ -108,13 +108,15 @@ public class CombatHealth : MonoBehaviour, IDamageable
     private void Die()
     {
         // Tambahkan death untuk korban.
-        GetComponent<CombatStats>()?.RegisterDeath();
+        CombatStats victimStats = CombatStats.FindFor(this);
+        if (victimStats != null) victimStats.RegisterDeath();
 
         // Berikan reward kredit kepada pembunuh (lastAttacker).
         if (lastAttacker != null && lastAttacker != this)
         {
             // Tambahkan kill statistik.
-            lastAttacker.GetComponent<CombatStats>()?.RegisterKill();
+            CombatStats attackerStats = CombatStats.FindFor(lastAttacker);
+            if (attackerStats != null) attackerStats.RegisterKill();
 
             // Hitung reward random antara min dan max.
             int reward = UnityEngine.Random.Range(minKillReward, maxKillReward + 1);

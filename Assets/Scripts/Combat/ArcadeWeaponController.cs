@@ -360,7 +360,7 @@ public class ArcadeWeaponController : MonoBehaviour
         if (!TryGetTarget(out RaycastHit hit))
             return;
 
-        CombatHealth ownHealth = GetComponent<CombatHealth>();
+        CombatHealth ownHealth = GetComponentInParent<CombatHealth>();
         HitZone zone = hit.collider.GetComponentInParent<HitZone>();
 
         if (zone != null)
@@ -387,7 +387,7 @@ public class ArcadeWeaponController : MonoBehaviour
             HitZone zone = hit.collider.GetComponentInParent<HitZone>();
             CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
 
-            CombatHealth ownHealth = GetComponent<CombatHealth>();
+            CombatHealth ownHealth = GetComponentInParent<CombatHealth>();
             bool isEnemyTeam = health != null && health != ownHealth &&
                 (ownHealth == null || ownHealth.Team == Team.None ||
                  health.Team == Team.None || ownHealth.Team != health.Team);

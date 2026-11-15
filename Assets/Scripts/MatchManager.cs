@@ -48,6 +48,7 @@ public class MatchManager : MonoBehaviour
         }
         Instance = this;
         ShootingEnabled = true;
+        CombatStats.ResetPlayerStats();
 
         // Sembunyikan banner di awal.
         if (winBannerRect != null) winBannerRect.gameObject.SetActive(false);
@@ -129,8 +130,8 @@ public class MatchManager : MonoBehaviour
                 Debug.Log($"[MatchManager] timeScale sebelum pindah Result: {timeScaleBefore}, diatur ke 1f.");
 
                 SimpanHasilAkhir();
-                Debug.Log($"[MatchManager] Memuat scene Result: {resultSceneName}");
-                SceneManager.LoadScene(resultSceneName);
+                Debug.Log($"[MatchManager] Memuat scene Result via Loading: {resultSceneName}");
+                LoadingScreen.Load(resultSceneName);
             }
             else
             {
@@ -171,6 +172,7 @@ public class MatchManager : MonoBehaviour
         var allHealth = FindObjectsByType<CombatHealth>();
         Debug.Log($"[MatchManager] Ditemukan {allHealth.Length} CombatHealth di scene.");
 
+        // 1) Utamakan tag Player (case-insensitive).
         foreach (CombatHealth h in allHealth)
         {
             if (string.Equals(h.tag, "player", StringComparison.OrdinalIgnoreCase))
@@ -181,18 +183,42 @@ public class MatchManager : MonoBehaviour
             }
         }
 
-        // Fallback: ambil CombatHealth pertama yang ditemukan.
+        // 2) Fallback: CombatHealth yang memiliki ArcadeWeaponController dengan autoFireFromInput (player).
+        if (playerHealth == null)
+        {
+            foreach (CombatHealth h in allHealth)
+            {
+                var awc = h.GetComponent<ArcadeWeaponController>() ?? h.GetComponentInParent<ArcadeWeaponController>() ?? h.GetComponentInChildren<ArcadeWeaponController>();
+                if (awc != null && awc.AutoFireFromInput)
+                {
+                    playerHealth = h;
+                    Debug.Log($"[MatchManager] Fallback player via ArcadeWeaponController.AutoFireFromInput pada {h.gameObject.name}");
+                    break;
+                }
+            }
+        }
+
+        // 3) Fallback terakhir: CombatHealth pertama yang memiliki CombatStats.
+        if (playerHealth == null)
+        {
+            foreach (CombatHealth h in allHealth)
+            {
+                if (CombatStats.FindFor(h) != null)
+                {
+                    playerHealth = h;
+                    Debug.Log($"[MatchManager] Fallback player via CombatStats pada {h.gameObject.name} (tag={h.tag})");
+                    break;
+                }
+            }
+        }
+
         if (playerHealth == null)
         {
             playerHealth = FindAnyObjectByType<CombatHealth>();
             if (playerHealth != null)
-            {
-                Debug.Log($"[MatchManager] Tidak ada tag 'player', pakai fallback CombatHealth pertama: {playerHealth.gameObject.name} (tag={playerHealth.tag})");
-            }
+                Debug.Log($"[MatchManager] Fallback CombatHealth pertama: {playerHealth.gameObject.name} (tag={playerHealth.tag})");
             else
-            {
                 Debug.LogWarning("[MatchManager] Tidak ada CombatHealth sama sekali di scene!");
-            }
         }
 
         int kills = 0;
@@ -200,12 +226,7 @@ public class MatchManager : MonoBehaviour
 
         if (playerHealth != null)
         {
-            // Cari CombatStats di sama GameObject, parent, atau child.
-            CombatStats stats = playerHealth.GetComponent<CombatStats>();
-            if (stats == null)
-                stats = playerHealth.GetComponentInParent<CombatStats>();
-            if (stats == null)
-                stats = playerHealth.GetComponentInChildren<CombatStats>();
+            CombatStats stats = CombatStats.FindFor(playerHealth);
 
             if (stats != null)
             {
@@ -216,10 +237,17 @@ public class MatchManager : MonoBehaviour
             else
             {
                 Debug.LogWarning("[MatchManager] Pemain tidak memiliki component CombatStats (tidak ada di objek itu, parent, atau child)!");
-                // Debug: daftar semua komponen pada pemain untuk diagnosa
                 var components = playerHealth.GetComponents<Component>();
                 Debug.Log($"[MatchManager] Komponen pada {playerHealth.gameObject.name}: {string.Join(", ", components.Select(c => c.GetType().Name))}");
             }
+        }
+
+        // Fallback ke akumulasi statik pemain jika instance stats masih 0 namun akumulasi tersedia.
+        if (kills == 0 && deaths == 0 && (CombatStats.PlayerKills > 0 || CombatStats.PlayerDeaths > 0))
+        {
+            kills = CombatStats.PlayerKills;
+            deaths = CombatStats.PlayerDeaths;
+            Debug.Log($"[MatchManager] Menggunakan akumulasi statik pemain: Kill={kills}, Death={deaths}");
         }
 
         string grade = ResultStatsUI.HitungGrade(kills, deaths);
