@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -183,7 +184,7 @@ public class MatchManager : MonoBehaviour
         // Fallback: ambil CombatHealth pertama yang ditemukan.
         if (playerHealth == null)
         {
-            playerHealth = FindObjectOfType<CombatHealth>();
+            playerHealth = FindAnyObjectByType<CombatHealth>();
             if (playerHealth != null)
             {
                 Debug.Log($"[MatchManager] Tidak ada tag 'player', pakai fallback CombatHealth pertama: {playerHealth.gameObject.name} (tag={playerHealth.tag})");
