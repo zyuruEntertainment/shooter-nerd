@@ -141,10 +141,12 @@ public class GameplayUIManager : MonoBehaviour
     {
         if (Instance == this)
         {
-            if (pauseGameplay && shopIsOpen)
-                Time.timeScale = previousTimeScale;
-            else if (Time.timeScale == 0f)
-                Time.timeScale = 1f;
+            Debug.Log($"[GameplayUIManager] OnDestroy dipanggil. shopIsOpen={shopIsOpen}, Time.timeScale={Time.timeScale}");
+
+            // Jangan memulihkan Time.timeScale di OnDestroy saat scene berubah.
+            // Pengelolaan waktu dilakukan secara terpusat oleh MatchManager sebelum SceneManager.LoadScene.
+            // Ini mencegah race condition di mana OnDestroy menimpa nilai timeScale
+            // yang sudah diatur MatchManager sebelum transisi dimulai.
 
             Instance = null;
         }

@@ -156,12 +156,12 @@ public class PauseManager : MonoBehaviour
     {
         if (Instance == this)
         {
-            // Saat scene berubah (termasuk ke Result), pastikan timeScale kembali ke 1f
-            // agar scene baru tidak mewariskan kondisi freeze (timeScale = 0).
-            if (isPaused && pauseTimeScale)
-                Time.timeScale = previousTimeScale;
-            else if (Time.timeScale == 0f)
-                Time.timeScale = 1f;
+            Debug.Log($"[PauseManager] OnDestroy dipanggil. isPaused={isPaused}, Time.timeScale={Time.timeScale}");
+
+            // Jangan memulihkan Time.timeScale di OnDestroy saat scene berubah.
+            // Pengelolaan waktu dilakukan secara terpusat oleh MatchManager sebelum SceneManager.LoadScene.
+            // Ini mencegah race condition di mana OnDestroy menimpa nilai timeScale
+            // yang sudah diatur MatchManager sebelum transisi dimulai.
 
             if (pauseInstance != null)
                 Destroy(pauseInstance);

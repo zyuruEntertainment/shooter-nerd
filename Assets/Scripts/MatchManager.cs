@@ -108,6 +108,19 @@ public class MatchManager : MonoBehaviour
 
             if (!string.IsNullOrEmpty(resultSceneName))
             {
+                // Pastikan semua sistem pause/shop sudah dalam kondisi normal sebelum pindah scene.
+                if (PauseManager.Instance != null && PauseManager.Instance.IsPaused)
+                {
+                    Debug.Log("[MatchManager] PauseManager sedang pause, memanggil Resume() sebelum pindah scene.");
+                    PauseManager.Instance.Resume();
+                }
+
+                if (GameplayUIManager.Instance != null && GameplayUIManager.Instance.IsShopOpen)
+                {
+                    Debug.Log("[MatchManager] GameplayUIManager shop terbuka, memanggil CloseShop() sebelum pindah scene.");
+                    GameplayUIManager.Instance.CloseShop();
+                }
+
                 // Pastikan waktu tidak dalam kondisi freeze saat pindah scene.
                 float timeScaleBefore = Time.timeScale;
                 Time.timeScale = 1f;
