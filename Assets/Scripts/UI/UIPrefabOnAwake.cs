@@ -21,5 +21,9 @@ public class UIPrefabOnAwake : MonoBehaviour
         // Instantiate tanpa parent => langsung di root hierarchy.
         GameObject instance = Instantiate(ui);
         instance.SetActive(true);
+
+        // Daftarkan agar UIPrefabManager bisa menyembunyikan/menampilkan ulang
+        // instance UI yang dimunculkan sebelumnya.
+        UIPrefabManager.RegisterUIInstance(instance);
     }
 }

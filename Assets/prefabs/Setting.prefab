@@ -45,4 +45,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIPrefabManager
   prefabUI: {fileID: 3647986870525939264, guid: a278c977d1e0dca48a9362d2110a1fb7, type: 3}
-  ui: {fileID: 0}
+  ui: {fileID: 435549934498578260, guid: de18a0698127f194ba5c38167e1f6de6, type: 3}
