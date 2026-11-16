@@ -172,33 +172,48 @@ public class MatchManager : MonoBehaviour
         var allHealth = FindObjectsByType<CombatHealth>();
         Debug.Log($"[MatchManager] Ditemukan {allHealth.Length} CombatHealth di scene.");
 
-        // 1) Utamakan tag Player (case-insensitive).
+        // 1) Utamakan CombatHealth yang memiliki ArcadeWeaponController dengan autoFireFromInput (player) — paling andal.
         foreach (CombatHealth h in allHealth)
         {
-            if (string.Equals(h.tag, "player", StringComparison.OrdinalIgnoreCase))
+            var awc = h.GetComponent<ArcadeWeaponController>() ?? h.GetComponentInParent<ArcadeWeaponController>() ?? h.GetComponentInChildren<ArcadeWeaponController>();
+            if (awc != null && awc.AutoFireFromInput)
             {
                 playerHealth = h;
-                Debug.Log($"[MatchManager] Ditemukan pemain dengan tag '{h.tag}' pada {h.gameObject.name}");
+                Debug.Log($"[MatchManager] Pemain ditemukan via ArcadeWeaponController.AutoFireFromInput pada {h.gameObject.name} (tag={h.tag})");
                 break;
             }
         }
 
-        // 2) Fallback: CombatHealth yang memiliki ArcadeWeaponController dengan autoFireFromInput (player).
+        // 2) Fallback: tag Player (case-insensitive).
         if (playerHealth == null)
         {
             foreach (CombatHealth h in allHealth)
             {
-                var awc = h.GetComponent<ArcadeWeaponController>() ?? h.GetComponentInParent<ArcadeWeaponController>() ?? h.GetComponentInChildren<ArcadeWeaponController>();
-                if (awc != null && awc.AutoFireFromInput)
+                if (string.Equals(h.tag, "player", StringComparison.OrdinalIgnoreCase))
                 {
                     playerHealth = h;
-                    Debug.Log($"[MatchManager] Fallback player via ArcadeWeaponController.AutoFireFromInput pada {h.gameObject.name}");
+                    Debug.Log($"[MatchManager] Ditemukan pemain dengan tag '{h.tag}' pada {h.gameObject.name}");
                     break;
                 }
             }
         }
 
-        // 3) Fallback terakhir: CombatHealth pertama yang memiliki CombatStats.
+        // 3) Fallback: CombatHealth yang memiliki CombatStats dengan tag Player.
+        if (playerHealth == null)
+        {
+            foreach (CombatHealth h in allHealth)
+            {
+                CombatStats s = CombatStats.FindFor(h);
+                if (s != null && string.Equals(s.gameObject.tag, "player", StringComparison.OrdinalIgnoreCase))
+                {
+                    playerHealth = h;
+                    Debug.Log($"[MatchManager] Fallback player via CombatStats tag Player pada {h.gameObject.name}");
+                    break;
+                }
+            }
+        }
+
+        // 4) Fallback terakhir: CombatHealth pertama yang memiliki CombatStats.
         if (playerHealth == null)
         {
             foreach (CombatHealth h in allHealth)
@@ -242,12 +257,15 @@ public class MatchManager : MonoBehaviour
             }
         }
 
-        // Fallback ke akumulasi statik pemain jika instance stats masih 0 namun akumulasi tersedia.
-        if (kills == 0 && deaths == 0 && (CombatStats.PlayerKills > 0 || CombatStats.PlayerDeaths > 0))
+        // Gunakan akumulasi statik pemain jika lebih lengkap dari instance (mencegah result yang tidak sesuai).
+        if (CombatStats.PlayerKills > 0 || CombatStats.PlayerDeaths > 0)
         {
-            kills = CombatStats.PlayerKills;
-            deaths = CombatStats.PlayerDeaths;
-            Debug.Log($"[MatchManager] Menggunakan akumulasi statik pemain: Kill={kills}, Death={deaths}");
+            if (kills < CombatStats.PlayerKills || deaths < CombatStats.PlayerDeaths || (kills == 0 && deaths == 0))
+            {
+                kills = Mathf.Max(kills, CombatStats.PlayerKills);
+                deaths = Mathf.Max(deaths, CombatStats.PlayerDeaths);
+                Debug.Log($"[MatchManager] Menggunakan akumulasi statik pemain: Kill={kills}, Death={deaths}");
+            }
         }
 
         string grade = ResultStatsUI.HitungGrade(kills, deaths);

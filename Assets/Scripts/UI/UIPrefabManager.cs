@@ -19,6 +19,10 @@ public class UIPrefabManager : MonoBehaviour
 
     private GameObject spawnedInstance;
 
+    // Instance UI yang disembunyikan saat Show() dipanggil, agar Close() hanya
+    // mengembalikan yang relevan (mencegah UI lain ikut muncul).
+    private readonly List<GameObject> lastHidden = new List<GameObject>();
+
     // Semua instance UI yang dikelola (termasuk yang dimunculkan UIPrefabOnAwake).
     public static readonly List<GameObject> AllUIInstances = new List<GameObject>();
 
@@ -45,11 +49,46 @@ public class UIPrefabManager : MonoBehaviour
             return;
         }
 
-        // Sembunyikan UI yang ditentukan (scene object atau instance dari prefab).
-        SetUiActive(false);
+        lastHidden.Clear();
 
-        // Sembunyikan semua instance UI lain yang terdaftar (termasuk UI prefab sebelumnya).
-        HideOtherRegisteredInstances();
+        // Sembunyikan UI yang ditentukan (scene object atau instance dari prefab).
+        GameObject targetUi = ResolveSceneObject(ui);
+        if (targetUi != null && targetUi != spawnedInstance && targetUi.activeSelf)
+        {
+            targetUi.SetActive(false);
+            lastHidden.Add(targetUi);
+        }
+
+        // Sembunyikan semua instance UI terdaftar yang sedang aktif (kecuali yang akan ditampilkan).
+        for (int i = AllUIInstances.Count - 1; i >= 0; i--)
+        {
+            if (AllUIInstances[i] == null)
+            {
+                AllUIInstances.RemoveAt(i);
+                continue;
+            }
+
+            if (AllUIInstances[i] != spawnedInstance && AllUIInstances[i].activeSelf)
+            {
+                AllUIInstances[i].SetActive(false);
+                lastHidden.Add(AllUIInstances[i]);
+            }
+        }
+
+        for (int i = shownInstances.Count - 1; i >= 0; i--)
+        {
+            if (shownInstances[i] == null)
+            {
+                shownInstances.RemoveAt(i);
+                continue;
+            }
+
+            if (shownInstances[i] != spawnedInstance && shownInstances[i].activeSelf)
+            {
+                shownInstances[i].SetActive(false);
+                lastHidden.Add(shownInstances[i]);
+            }
+        }
 
         if (spawnedInstance == null)
         {
@@ -70,8 +109,14 @@ public class UIPrefabManager : MonoBehaviour
         if (spawnedInstance != null)
             spawnedInstance.SetActive(false);
 
-        // Tampilkan kembali UI lain yang sempat disembunyikan.
-        ShowOtherRegisteredInstances();
+        // Tampilkan kembali hanya UI yang disembunyikan saat Show().
+        foreach (GameObject obj in lastHidden)
+        {
+            if (obj != null)
+                obj.SetActive(true);
+        }
+        lastHidden.Clear();
+
         SetUiActive(true);
     }
 

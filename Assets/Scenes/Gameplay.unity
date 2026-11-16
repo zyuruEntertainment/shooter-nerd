@@ -3856,9 +3856,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MatchManager
   pointManager: {fileID: 1319484668}
-  roundScoreToWin: 1
-  matchWinsToWin: 1
-  roundEndDelay: 5
+  roundScoreToWin: 10
+  matchWinsToWin: 2
+  roundEndDelay: 3
   bannerAnimDuration: 1
   nextRoundBannerDuration: 3
   winBannerRect: {fileID: 1030238660}

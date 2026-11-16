@@ -44,7 +44,15 @@ public class CombatStats : MonoBehaviour
 
     private bool IsPlayer()
     {
-        return string.Equals(gameObject.tag, "Player", StringComparison.OrdinalIgnoreCase);
+        // Cek tag pada GameObject ini maupun parent-nya (antisipasi CombatStats pada child).
+        Transform current = transform;
+        while (current != null)
+        {
+            if (string.Equals(current.tag, "Player", StringComparison.OrdinalIgnoreCase))
+                return true;
+            current = current.parent;
+        }
+        return false;
     }
 
     /// <summary>
