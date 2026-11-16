@@ -5365,6 +5365,42 @@ PrefabInstance:
       propertyPath: exceptions.Array.data[0].button
       value: 
       objectReference: {fileID: 1487399301}
+    - target: {fileID: 5798324993041105675, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 1c54f7d6120e4114fbc52ee913f253ad, type: 3}
+    - target: {fileID: 7955476822304376188, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 560
+      objectReference: {fileID: 0}
+    - target: {fileID: 7955476822304376188, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 124
+      objectReference: {fileID: 0}
+    - target: {fileID: 7955476822304376188, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7955476822304376188, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7955476822304376188, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7955476822304376188, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7955476822304376188, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 300
+      objectReference: {fileID: 0}
+    - target: {fileID: 7955476822304376188, guid: e2a15b013d77b004b94078586c4ab9a4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
