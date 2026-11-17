@@ -12,9 +12,8 @@ public class WeaponCardUI : MonoBehaviour
     [SerializeField] private WeaponData weaponData;
     [SerializeField] private AmmoData ammoData;
 
-    [Header("Pengaturan Kartu")]
-    [Tooltip("Centang jika kartu ini khusus untuk menampilkan ammo (bukan weapon).")]
-    [SerializeField] private bool isAmmoCard = false;
+    // Klasifikasi kartu ditentukan dari data yang terisi:
+    // jika ammoData != null (dan weaponData == null) => kartu ammo.
 
     [Header("Card UI")]
     [SerializeField] private Image cardPanel;
@@ -28,7 +27,7 @@ public class WeaponCardUI : MonoBehaviour
     public AmmoData Ammo => ammoData;
 
     /// <summary>Apakah kartu ini menampilkan ammo (bukan weapon).</summary>
-    public bool IsAmmo => ammoData != null || isAmmoCard;
+    public bool IsAmmo => ammoData != null && weaponData == null;
 
     private UnityAction onSelected;
 
@@ -48,7 +47,6 @@ public class WeaponCardUI : MonoBehaviour
     {
         weaponData = data;
         ammoData = null;
-        isAmmoCard = false;
         onSelected = selectionCallback;
 
         if (cardButton != null)
@@ -65,7 +63,6 @@ public class WeaponCardUI : MonoBehaviour
     {
         ammoData = data;
         weaponData = null;
-        isAmmoCard = true;
         onSelected = selectionCallback;
 
         if (cardButton != null)

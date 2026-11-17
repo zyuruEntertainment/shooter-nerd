@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4b3a54129a26374bad7ce9c036c9c67, type: 3}
+  m_Name: PlasmaBeam
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  weaponName: Plasma
+  price: 3000
+  icon: {fileID: 21300000, guid: 93cae068ff33f0142a51622057cd5a73, type: 3}
+  damage: 1
+  fireInterval: 10
+  range: 120000
+  magazineSize: 1000
+  startingReserveAmmo: 24000
+  startingMagazineAmmo: 1000
+  shootingAnimationDuration: 1
+  shootSound: {fileID: 8300000, guid: 782f3942fdfcdcf48be3242ca05113b2, type: 3}
+  reloadSound: {fileID: 0}
+  reloadTime: 5
+  weaponModel: {fileID: 0}
