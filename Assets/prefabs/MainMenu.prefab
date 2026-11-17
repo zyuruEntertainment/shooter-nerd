@@ -375,7 +375,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1321318822359069243}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 6780451115432268717, guid: d32c86c713bf6a04387567ce78f76dc2, type: 3}
+        m_TargetAssemblyTypeName: UIPrefabManager, Assembly-CSharp
+        m_MethodName: Show
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1777897966254023134
 GameObject:
   m_ObjectHideFlags: 0

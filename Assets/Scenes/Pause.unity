@@ -276,6 +276,10 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6608636189303676500, guid: c69692d4c513c2e4ea3989ad06501814, type: 3}
+      propertyPath: m_Name
+      value: Sensitivity
+      objectReference: {fileID: 0}
     - target: {fileID: 8590621592329378733, guid: c69692d4c513c2e4ea3989ad06501814, type: 3}
       propertyPath: m_Pivot.x
       value: 0

@@ -884,7 +884,6 @@ GameObject:
   - component: {fileID: 5760543500972695133}
   - component: {fileID: 3484335893216052026}
   m_Layer: 0
-  m_Name: SensitivityManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -917,8 +916,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5fcda18296ba3f43abc2016f6f68030, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SensitivityManager
-  lookSensitivitySlider: {fileID: 2367804937824510354}
-  fireSensitivitySlider: {fileID: 278143548429668162}
+  lookSensitivitySliders:
+  - {fileID: 2367804937824510354}
+  fireSensitivitySliders:
+  - {fileID: 278143548429668162}
+  sliderParent: {fileID: 0}
   lookMin: 0.1
   lookMax: 10
   defaultLook: 3

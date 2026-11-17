@@ -156,9 +156,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CreditsScroller
   text: {fileID: 3676932493335544770}
-  speed: 50
-  startOffset: -2000
-  endOffset: 2000
+  speed: 75
+  startOffset: -1800
+  endOffset: 1800
 --- !u!1 &1789746102052110223
 GameObject:
   m_ObjectHideFlags: 0

@@ -4,6 +4,9 @@ public class SensitivitySettings : MonoBehaviour
 {
     public static SensitivitySettings Instance { get; private set; }
 
+    private const string PrefLookKey = "shooter_nerd_look_sensitivity";
+    private const string PrefFireKey = "shooter_nerd_fire_sensitivity";
+
     [Header("Look Sensitivity")]
     [Tooltip("Nilai mentah slider (0.1 - 10). Dipetakan ke pengali internal melalui MapLookSensitivity.")]
     [SerializeField, Min(0.01f)]
@@ -14,6 +17,8 @@ public class SensitivitySettings : MonoBehaviour
     public void SetLookSensitivity(float value)
     {
         lookSensitivity = Mathf.Max(0.01f, value);
+        PlayerPrefs.SetFloat(PrefLookKey, lookSensitivity);
+        PlayerPrefs.Save();
     }
 
     [Header("Fire Sensitivity")]
@@ -25,6 +30,20 @@ public class SensitivitySettings : MonoBehaviour
     public void SetFireSensitivity(float value)
     {
         fireSensitivity = Mathf.Max(0.01f, value);
+        PlayerPrefs.SetFloat(PrefFireKey, fireSensitivity);
+        PlayerPrefs.Save();
+    }
+
+    /// <summary>
+    /// Muat nilai sensitivitas yang tersimpan (jika ada) sehingga tetap konsisten
+    /// antar sesi game / setelah keluar dari game.
+    /// </summary>
+    private void LoadPersisted()
+    {
+        if (PlayerPrefs.HasKey(PrefLookKey))
+            lookSensitivity = Mathf.Max(0.01f, PlayerPrefs.GetFloat(PrefLookKey));
+        if (PlayerPrefs.HasKey(PrefFireKey))
+            fireSensitivity = Mathf.Max(0.01f, PlayerPrefs.GetFloat(PrefFireKey));
     }
 
     /// <summary>
@@ -63,6 +82,9 @@ public class SensitivitySettings : MonoBehaviour
         }
 
         Instance = this;
+
+        // Muat nilai yang tersimpan (jika ada) agar pengaturan tetap konsisten.
+        LoadPersisted();
 
         // Persist hanya jika GameObject ini adalah root (syarat DontDestroyOnLoad).
         if (transform.parent == null)
