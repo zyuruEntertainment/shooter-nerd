@@ -35,7 +35,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 300, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2600551626371969032
 CanvasRenderer:
@@ -769,6 +769,7 @@ GameObject:
   - component: {fileID: 6237777020842195706}
   - component: {fileID: 6791288193299584214}
   - component: {fileID: 1615662881092020105}
+  - component: {fileID: 8407348131115400383}
   m_Layer: 5
   m_Name: Skin
   m_TagString: Untagged
@@ -878,6 +879,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &8407348131115400383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6214362101068187967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ddae21e7b7a499696f820c84f8ff124, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemCard
+  card: {fileID: 0}
+  shopItemAsset: {fileID: 0}
 --- !u!1 &6288351160164000950
 GameObject:
   m_ObjectHideFlags: 0

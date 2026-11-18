@@ -32,6 +32,21 @@ public class AmmoCardUI : MonoBehaviour
     public int PremiumPrice => premiumPrice;
     public string PremiumId => string.IsNullOrWhiteSpace(premiumId) ? (ammoData != null ? ammoData.AmmoName : string.Empty) : premiumId;
 
+    /// <summary>Terapkan data dari ShopItemAsset (premium, harga, id, nama) ke kartu.</summary>
+    public void ApplyShopItem(ShopItemAsset asset)
+    {
+        if (asset == null)
+            return;
+
+        isPremium = asset.IsPremium;
+        premiumPrice = asset.Price;
+        if (string.IsNullOrWhiteSpace(premiumId))
+            premiumId = asset.PremiumId;
+
+        if (asset.AmmoData != null)
+            ammoData = asset.AmmoData;
+    }
+
     private UnityAction onSelected;
 
     private void Awake()
@@ -70,5 +85,14 @@ public class AmmoCardUI : MonoBehaviour
         cardPanel.color = selected
             ? selectedColor
             : normalColor;
+    }
+
+    /// <summary>Atur warna kartu (normal/selected) dari luar (mis. ItemCard).</summary>
+    public void SetColors(Color normal, Color selected)
+    {
+        normalColor = normal;
+        selectedColor = selected;
+        if (cardPanel != null)
+            cardPanel.color = normalColor;
     }
 }
