@@ -21,6 +21,9 @@ public class PlayerWallet : MonoBehaviour
 
         Instance = this;
 
+        // Muat data tersimpan (cash, item premium) agar tidak tertimpa reset kredit.
+        SaveSystem.Load();
+
         // Jika nilai di Inspector tertulis 0 (atau kosong), paksa default 2500
         // agar saldo tidak pernah tampil 0 saat memulai play.
         int saldoAwal = startingCredits > 0 ? startingCredits : 2500;

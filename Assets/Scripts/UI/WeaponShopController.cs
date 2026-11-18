@@ -41,6 +41,31 @@ public class WeaponShopController : MonoBehaviour
     private bool isInitialized;
     private bool isBuyingAmmo;
 
+    private void OnEnable()
+    {
+        PremiumOwnership.OnOwnershipChanged += HandlePremiumOwnershipChanged;
+    }
+
+    private void OnDisable()
+    {
+        PremiumOwnership.OnOwnershipChanged -= HandlePremiumOwnershipChanged;
+    }
+
+    private void HandlePremiumOwnershipChanged()
+    {
+        if (!isInitialized)
+            return;
+        RebuildCards();
+    }
+
+    private void RebuildCards()
+    {
+        weaponCards.Clear();
+        ammoCards.Clear();
+        BuildCards();
+        BuildAmmoCards();
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -177,6 +202,13 @@ public class WeaponShopController : MonoBehaviour
             // Data diambil dari konfigurasi prefab, bukan dari urutan child.
             if (card.Weapon != null)
             {
+                // Item premium yang belum dibeli tidak ditampilkan.
+                if (card.IsPremium && !PremiumOwnership.IsOwned(card.PremiumId))
+                {
+                    card.gameObject.SetActive(false);
+                    continue;
+                }
+
                 card.gameObject.SetActive(true);
                 card.Initialize(card.Weapon, () => OnCardSelected(card));
                 weaponCards.Add(card);
@@ -200,6 +232,13 @@ public class WeaponShopController : MonoBehaviour
             // Data diambil dari konfigurasi prefab, bukan dari urutan child.
             if (card.Ammo != null)
             {
+                // Item premium yang belum dibeli tidak ditampilkan.
+                if (card.IsPremium && !PremiumOwnership.IsOwned(card.PremiumId))
+                {
+                    card.gameObject.SetActive(false);
+                    continue;
+                }
+
                 card.gameObject.SetActive(true);
                 card.Initialize(card.Ammo, () => OnAmmoCardSelected(card));
                 ammoCards.Add(card);

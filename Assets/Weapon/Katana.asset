@@ -25,4 +25,4 @@ MonoBehaviour:
   shootSound: {fileID: 8300000, guid: 2254527d88d1f7342b6b4439487c3237, type: 3}
   reloadSound: {fileID: 8300000, guid: 2254527d88d1f7342b6b4439487c3237, type: 3}
   reloadTime: 0.01
-  weaponModel: {fileID: 0}
+  weaponModel: {fileID: 2445238044254970952, guid: 159a5d781ecf8d845abdaea5bc65e227, type: 3}

@@ -63,7 +63,9 @@ public static class SaveSystem
     public class GameData
     {
         public int credits = 2500;
+        public int cash = 0;
         public List<string> ownedWeaponNames = new List<string>();
         public string equippedWeaponName = string.Empty;
+        public List<string> ownedPremiumItems = new List<string>();
     }
 }

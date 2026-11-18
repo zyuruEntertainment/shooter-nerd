@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4b3a54129a26374bad7ce9c036c9c67, type: 3}
   m_Name: Sniper
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
-  weaponName: New Weapon
+  weaponName: Sniper
   price: 3200
   icon: {fileID: 21300000, guid: b4c2137050629e843b50de6c3305312f, type: 3}
-  damage: 99
+  damage: 100
   fireInterval: 0.15
   range: 25000
   magazineSize: 1
@@ -25,4 +25,4 @@ MonoBehaviour:
   shootSound: {fileID: 8300000, guid: 26b7f27c16f82584888e482c41b0e4ed, type: 3}
   reloadSound: {fileID: 8300000, guid: 478516524936559499de100169a4f13e, type: 3}
   reloadTime: 3
-  weaponModel: {fileID: 0}
+  weaponModel: {fileID: 7873802207101434520, guid: c36ec1de55b480b43b8784a9362050c3, type: 3}

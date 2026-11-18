@@ -10,6 +10,14 @@ public class WeaponCardUI : MonoBehaviour
     [Header("Item")]
     [SerializeField] private WeaponData weaponData;
 
+    [Header("Premium (pembelian luar game)")]
+    [Tooltip("Jika true, kartu hanya ditampilkan jika item sudah dibeli (status owned).")]
+    [SerializeField] private bool isPremium = false;
+    [Tooltip("Harga dalam cash untuk pembelian premium.")]
+    [SerializeField, Min(0)] private int premiumPrice = 0;
+    [Tooltip("ID unik item premium. Kosong = pakai nama weapon.")]
+    [SerializeField] private string premiumId = string.Empty;
+
     [Header("Card UI")]
     [SerializeField] private Image cardPanel;
     [SerializeField] private Button cardButton;
@@ -19,6 +27,10 @@ public class WeaponCardUI : MonoBehaviour
     [SerializeField] private Color selectedColor = Color.white;
 
     public WeaponData Weapon => weaponData;
+
+    public bool IsPremium => isPremium;
+    public int PremiumPrice => premiumPrice;
+    public string PremiumId => string.IsNullOrWhiteSpace(premiumId) ? (weaponData != null ? weaponData.WeaponName : string.Empty) : premiumId;
 
     private UnityAction onSelected;
 

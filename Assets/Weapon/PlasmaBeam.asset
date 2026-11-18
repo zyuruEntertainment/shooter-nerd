@@ -24,5 +24,5 @@ MonoBehaviour:
   shootingAnimationDuration: 1
   shootSound: {fileID: 8300000, guid: 782f3942fdfcdcf48be3242ca05113b2, type: 3}
   reloadSound: {fileID: 8300000, guid: 5a40e807db49bf94b96210486732d14b, type: 3}
-  reloadTime: 5
-  weaponModel: {fileID: 0}
+  reloadTime: 3
+  weaponModel: {fileID: 4856116828846427068, guid: e7198fa532a8f0d46b2215fe77f6b99b, type: 3}
