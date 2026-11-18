@@ -3,17 +3,12 @@ using UnityEngine.UI;
 using UnityEngine.Events;
 
 /// <summary>
-/// Kartu item toko yang mendukung baik WeaponData maupun AmmoData.
-/// Jika weaponData diisi, kartu menampilkan weapon. Jika ammoData diisi, kartu menampilkan ammo.
+/// Kartu item toko khusus WeaponData.
 /// </summary>
 public class WeaponCardUI : MonoBehaviour
 {
     [Header("Item")]
     [SerializeField] private WeaponData weaponData;
-    [SerializeField] private AmmoData ammoData;
-
-    // Klasifikasi kartu ditentukan dari data yang terisi:
-    // jika ammoData != null (dan weaponData == null) => kartu ammo.
 
     [Header("Card UI")]
     [SerializeField] private Image cardPanel;
@@ -24,10 +19,6 @@ public class WeaponCardUI : MonoBehaviour
     [SerializeField] private Color selectedColor = Color.white;
 
     public WeaponData Weapon => weaponData;
-    public AmmoData Ammo => ammoData;
-
-    /// <summary>Apakah kartu ini menampilkan ammo (bukan weapon).</summary>
-    public bool IsAmmo => ammoData != null && weaponData == null;
 
     private UnityAction onSelected;
 
@@ -40,29 +31,11 @@ public class WeaponCardUI : MonoBehaviour
             cardPanel.color = normalColor;
     }
 
-    /// <summary>Inisialisasi kartu untuk weapon.</summary>
     public void Initialize(
         WeaponData data,
         UnityAction selectionCallback)
     {
         weaponData = data;
-        ammoData = null;
-        onSelected = selectionCallback;
-
-        if (cardButton != null)
-        {
-            cardButton.onClick.RemoveAllListeners();
-            cardButton.onClick.AddListener(Select);
-        }
-    }
-
-    /// <summary>Inisialisasi kartu untuk ammo.</summary>
-    public void Initialize(
-        AmmoData data,
-        UnityAction selectionCallback)
-    {
-        ammoData = data;
-        weaponData = null;
         onSelected = selectionCallback;
 
         if (cardButton != null)

@@ -16,7 +16,7 @@ MonoBehaviour:
   price: 1000
   icon: {fileID: 21300000, guid: 174e6287541f2a9448da2e830457b102, type: 3}
   damage: 25
-  fireInterval: 1
+  fireInterval: 0.5
   range: 5
   magazineSize: 10000
   startingReserveAmmo: 10000

@@ -16,13 +16,13 @@ MonoBehaviour:
   price: 3000
   icon: {fileID: 21300000, guid: 93cae068ff33f0142a51622057cd5a73, type: 3}
   damage: 1
-  fireInterval: 10
+  fireInterval: 0.01
   range: 120000
   magazineSize: 1000
   startingReserveAmmo: 24000
   startingMagazineAmmo: 1000
   shootingAnimationDuration: 1
   shootSound: {fileID: 8300000, guid: 782f3942fdfcdcf48be3242ca05113b2, type: 3}
-  reloadSound: {fileID: 0}
+  reloadSound: {fileID: 8300000, guid: 5a40e807db49bf94b96210486732d14b, type: 3}
   reloadTime: 5
   weaponModel: {fileID: 0}

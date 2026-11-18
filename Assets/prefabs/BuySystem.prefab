@@ -222,8 +222,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
-  weaponData: {fileID: 11400000, guid: 8acfe01801d01364999922a3801b1268, type: 2}
-  ammoData: {fileID: 11400000, guid: ff93495296486134ba213fbb9c81bdf0, type: 2}
+  weaponData: {fileID: 11400000, guid: db49bf6286f0fd641a0c96cc87985521, type: 2}
   cardPanel: {fileID: 2356873129253869917}
   cardButton: {fileID: 9004251310235235056}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -795,10 +794,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1123499959243528593}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
+  m_Script: {fileID: 11500000, guid: 17fae7071872476fa44cfdf072004713, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
-  weaponData: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::AmmoCardUI
   ammoData: {fileID: 11400000, guid: 557393b35ea9cd24f8dc23ae28d54ef1, type: 2}
   cardPanel: {fileID: 1636327526699801769}
   cardButton: {fileID: 7795625681214203598}
@@ -2059,7 +2057,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
   weaponData: {fileID: 11400000, guid: facd9b905e4ff2440ad18c33c60549e1, type: 2}
-  ammoData: {fileID: 11400000, guid: c683d02bbb948f84cb02b9e23fdb6fbe, type: 2}
   cardPanel: {fileID: 1300121526615759147}
   cardButton: {fileID: 8542799230767722355}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -2230,7 +2227,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
   weaponData: {fileID: 11400000, guid: 0f0306529265a5f419be98e7892e8c86, type: 2}
-  ammoData: {fileID: 0}
   cardPanel: {fileID: 5558450128257081256}
   cardButton: {fileID: 308332227051221506}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -2462,7 +2458,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
   weaponData: {fileID: 11400000, guid: bfd45ca878c0cdc4d9361da3c1ab39a3, type: 2}
-  ammoData: {fileID: 11400000, guid: 557393b35ea9cd24f8dc23ae28d54ef1, type: 2}
   cardPanel: {fileID: 8812410872164348420}
   cardButton: {fileID: 4320639582686238454}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -2766,10 +2761,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 4550088903882025214}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
+  m_Script: {fileID: 11500000, guid: 17fae7071872476fa44cfdf072004713, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
-  weaponData: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::AmmoCardUI
   ammoData: {fileID: 11400000, guid: ff93495296486134ba213fbb9c81bdf0, type: 2}
   cardPanel: {fileID: 6338325974834240593}
   cardButton: {fileID: 1639555606009449895}
@@ -2940,7 +2934,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
   weaponData: {fileID: 11400000, guid: 8acfe01801d01364999922a3801b1268, type: 2}
-  ammoData: {fileID: 11400000, guid: ed3fc0d11b1e17b4ea0f17bcf68f1b3e, type: 2}
   cardPanel: {fileID: 1361439193292288960}
   cardButton: {fileID: 488751010001145572}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -3462,8 +3455,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
-  weaponData: {fileID: 11400000, guid: bfd45ca878c0cdc4d9361da3c1ab39a3, type: 2}
-  ammoData: {fileID: 0}
+  weaponData: {fileID: 0}
   cardPanel: {fileID: 1369466211487793619}
   cardButton: {fileID: 6199167481791752357}
   normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
@@ -4949,15 +4941,15 @@ RectTransform:
   - {fileID: 425788007818343230}
   - {fileID: 4127903837761825180}
   - {fileID: 9211887541546197613}
-  - {fileID: 9169803434954341857}
   - {fileID: 2139126834037201825}
-  - {fileID: 4155475154440789033}
   - {fileID: 4493063184213384692}
-  - {fileID: 5680465938722685369}
   - {fileID: 7773661535174679976}
-  - {fileID: 2312379942355912357}
   - {fileID: 2537057649672553957}
   - {fileID: 3133656128189943190}
+  - {fileID: 9169803434954341857}
+  - {fileID: 4155475154440789033}
+  - {fileID: 5680465938722685369}
+  - {fileID: 2312379942355912357}
   - {fileID: 8141998334672785044}
   - {fileID: 4078437431381678340}
   m_Father: {fileID: 0}
@@ -5085,7 +5077,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ff93495296486134ba213fbb9c81bdf0, type: 2}
   creditsText: {fileID: 551940695901938583}
   statusText: {fileID: 8213122992383570284}
-  ammoStatusText: {fileID: 8213122992383570284}
+  ammoStatusText: {fileID: 0}
   weaponManager: {fileID: 6509669723857579626, guid: be53475310485ba4b803e84548afc7b2, type: 3}
   wallet: {fileID: 5673621656056494409, guid: be53475310485ba4b803e84548afc7b2, type: 3}
   playerWeaponController: {fileID: 74464650883802570, guid: be53475310485ba4b803e84548afc7b2, type: 3}
@@ -5124,15 +5116,15 @@ MonoBehaviour:
     ditampilkan:
     - {fileID: 9211887541546197613}
     - {fileID: 2139126834037201825}
+    - {fileID: 4493063184213384692}
     - {fileID: 7773661535174679976}
     - {fileID: 2537057649672553957}
-    - {fileID: 4493063184213384692}
     - {fileID: 3133656128189943190}
   - name: 
     ditampilkan:
     - {fileID: 9169803434954341857}
-    - {fileID: 5680465938722685369}
     - {fileID: 4155475154440789033}
+    - {fileID: 5680465938722685369}
   defaultPage: 0
 --- !u!1 &7329631878685702584
 GameObject:
@@ -5220,10 +5212,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 7329631878685702584}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
+  m_Script: {fileID: 11500000, guid: 17fae7071872476fa44cfdf072004713, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
-  weaponData: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::AmmoCardUI
   ammoData: {fileID: 11400000, guid: ed3fc0d11b1e17b4ea0f17bcf68f1b3e, type: 2}
   cardPanel: {fileID: 3781484271807369}
   cardButton: {fileID: 4091724979573582639}
@@ -5315,10 +5306,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 7559847905978415438}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f19e3cf87a20524eba6f1c8a9bd531d, type: 3}
+  m_Script: {fileID: 11500000, guid: 17fae7071872476fa44cfdf072004713, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WeaponCardUI
-  weaponData: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::AmmoCardUI
   ammoData: {fileID: 11400000, guid: c683d02bbb948f84cb02b9e23fdb6fbe, type: 2}
   cardPanel: {fileID: 8305510444947601981}
   cardButton: {fileID: 6703990249101588442}
