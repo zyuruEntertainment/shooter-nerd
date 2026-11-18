@@ -193,12 +193,10 @@ public class ArcadeWeaponController : MonoBehaviour
 
         currentAmmo = Mathf.Clamp(data.StartingMagazineAmmo, 1, magazineSize);
 
-        // Hanya set reserveAmmo jika masih 0 (belum pernah diisi).
-        // Ini mencegah ammo yang sudah dibeli hilang saat ganti senjata/equip ulang.
-        if (reserveAmmo <= 0)
-        {
-            reserveAmmo = data.StartingReserveAmmo;
-        }
+        // Reset reserveAmmo ke nilai awal senjata ini; WeaponManager akan menimpa
+        // dengan nilai persisten (reserveAmmoByWeapon) via SetReserveAmmo setelah ApplyWeaponData.
+        // Jangan pertahankan nilai reserve dari senjata sebelumnya (mencegah "rifle jadi sniper ammo").
+        reserveAmmo = data.StartingReserveAmmo;
 
         nextFireTime = 0f;
         HasWeapon = true;

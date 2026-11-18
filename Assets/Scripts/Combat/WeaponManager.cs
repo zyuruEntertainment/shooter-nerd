@@ -209,6 +209,16 @@ public class WeaponManager : MonoBehaviour
         SaveSystem.Save();
     }
 
+    /// <summary>Ambil reserve ammo yang tersimpan untuk senjata tertentu.</summary>
+    public int GetReserveAmmo(WeaponData weapon)
+    {
+        if (weapon == null)
+            return 0;
+        if (reserveAmmoByWeapon.TryGetValue(weapon, out int val))
+            return val;
+        return weapon.StartingReserveAmmo;
+    }
+
     /// <summary>Tambah reserve ammo untuk senjata tertentu (dan sync ke controller jika sedang equipped).</summary>
     public void AddReserveAmmo(WeaponData weapon, int amount)
     {

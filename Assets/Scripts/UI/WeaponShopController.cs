@@ -361,7 +361,12 @@ public class WeaponShopController : MonoBehaviour
         // Tambah ammo ke senjata yang sedang dipakai (persisten per senjata).
         int reserveBefore = playerWeaponController != null ? playerWeaponController.ReserveAmmo : 0;
         if (weaponManager != null)
+        {
             weaponManager.AddReserveAmmo(equipped, selectedAmmo.AmountPerPurchase);
+            // Pastikan controller yang aktif (UI) ikut tersinkron (hindari desync rifle/sniper).
+            if (playerWeaponController != null && weaponManager.EquippedWeapon == equipped)
+                playerWeaponController.SetReserveAmmo(weaponManager.GetReserveAmmo(equipped));
+        }
         else if (playerWeaponController != null)
             playerWeaponController.AddAmmo(selectedAmmo.AmountPerPurchase);
         int reserveAfter = playerWeaponController != null ? playerWeaponController.ReserveAmmo : 0;
