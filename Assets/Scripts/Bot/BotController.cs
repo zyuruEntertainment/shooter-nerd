@@ -52,6 +52,7 @@ public class BotController : MonoBehaviour
     private float lastDamageTime = -999f;
     private float lastChargeTime = -999f;
     private float _lastShootDebugTime = -999f;
+    private float _lastSameTagLogTime = -999f;
     private Transform _lastAcquiredTarget;
     private Transform _lastAimTarget;
 
@@ -82,6 +83,19 @@ public class BotController : MonoBehaviour
 
     public bool DamageInterruptPending => damageInterruptPending;
     public void ClearDamageInterrupt() { damageInterruptPending = false; }
+
+    public bool HasValidCurrentTarget
+    {
+        get
+        {
+            if (playerTarget == null || health == null) return false;
+            var targetHealth = playerTarget.GetComponent<CombatHealth>();
+            if (targetHealth == null || targetHealth.IsDead) return false;
+            if (!CombatHealth.IsValidIdentityTag(targetHealth.IdentityTag)) return false;
+            if (targetHealth.IdentityTag == health.IdentityTag) return false;
+            return true;
+        }
+    }
 
     public CombatHealth RetaliationAttacker => retaliationAttacker;
 
@@ -218,29 +232,29 @@ public class BotController : MonoBehaviour
 
             if (changed)
             {
-                Debug.Log($"[BotDamage] {gameObject.name} received {info.Amount} damage from {attacker.gameObject.name} (tag {attacker.IdentityTag}).", this);
+                Debug.Log($"[BotDamage] {gameObject.name} received {info.Amount} damage from {attacker.gameObject.name} (tag {attacker.IdentityTag}); retaliation accepted.", this);
             }
 
             // Paksa re-acquire target agar retaliation prioritas diterapkan.
             AcquireTarget();
+
+            // Cooldown charge: jika masih dalam cooldown, tidak charge lagi.
+            if (settings == null || Time.time - lastChargeTime >= settings.ChargeCooldown)
+            {
+                // Saat ditembak, hentikan perilaku lalu CHARGE ke arah player (menyerang balik).
+                isCharging = true;
+                chargeTimer = settings != null ? settings.ChargeDuration : chargeTimer;
+                lastChargeTime = Time.time;
+                justDashed = false; // izinkan dash pada evaluasi berikutnya
+                isCrouching = false;
+                crouchTimer = 0f;
+                crouchCooldownTimer = 0f;
+            }
         }
         else
         {
-            Debug.Log($"[BotDamage] {gameObject.name} received {info.Amount} damage; retaliation rejected (attacker invalid).", this);
+            Debug.Log($"[BotDamage] {gameObject.name} received {info.Amount} damage; retaliation rejected (attacker invalid or same tag).", this);
         }
-
-        // Cooldown charge: jika masih dalam cooldown, tidak charge lagi.
-        if (settings != null && Time.time - lastChargeTime < settings.ChargeCooldown)
-            return;
-
-        // Saat ditembak, hentikan perilaku lalu CHARGE ke arah player (menyerang balik).
-        isCharging = true;
-        chargeTimer = settings.ChargeDuration;
-        lastChargeTime = Time.time;
-        justDashed = false; // izinkan dash pada evaluasi berikutnya
-        isCrouching = false;
-        crouchTimer = 0f;
-        crouchCooldownTimer = 0f;
 
         // Paksa evaluasi state lebih cepat.
         stateEvalTimer = 0f;
@@ -271,9 +285,16 @@ public class BotController : MonoBehaviour
 
         // Re-acquire target musuh jika target null/mati/invalid/identitas sama.
         CombatHealth targetHealth = playerTarget != null ? playerTarget.GetComponent<CombatHealth>() : null;
+        bool sameTagTarget = targetHealth != null && health != null && targetHealth.IdentityTag == health.IdentityTag;
         bool invalidTarget = playerTarget == null || targetHealth == null || targetHealth.IsDead ||
             !CombatHealth.IsValidIdentityTag(targetHealth.IdentityTag) ||
-            (health != null && targetHealth.IdentityTag == health.IdentityTag);
+            sameTagTarget;
+
+        if (sameTagTarget && Time.time - _lastSameTagLogTime > 2f)
+        {
+            _lastSameTagLogTime = Time.time;
+            Debug.Log($"[BotTarget] {gameObject.name} (tag {health.IdentityTag}) released target {playerTarget.name} (tag {targetHealth.IdentityTag}): same tag.", this);
+        }
 
         // Retaliation memory expiry.
         bool retaliationExpired = retaliationAttacker != null &&

@@ -23,9 +23,8 @@ public class CombatHealth : MonoBehaviour, IDamageable
     private Team resolvedTeam = Team.None;
     private bool identityResolved = false;
 
-    // Identitas targeting berbasis tag GameObject (exact tag).
-    private string resolvedIdentityTag = string.Empty;
-    public string IdentityTag => resolvedIdentityTag;
+    // Identitas targeting berbasis tag GameObject (exact tag), dihitung saat dibutuhkan agar tetap sinkron.
+    public string IdentityTag => ResolveIdentityTag();
 
     public static bool IsValidIdentityTag(string tag)
     {
@@ -61,13 +60,12 @@ public class CombatHealth : MonoBehaviour, IDamageable
     private void Awake()
     {
         ResolveTeamIdentity();
-        ResolveIdentityTag();
 
         CurrentHealth = maxHealth;
         TeamRegistry.Register(this);
     }
 
-    private void ResolveIdentityTag()
+    private string ResolveIdentityTag()
     {
         Transform root = transform;
         while (root.parent != null)
@@ -77,7 +75,7 @@ public class CombatHealth : MonoBehaviour, IDamageable
                 break;
             root = root.parent;
         }
-        resolvedIdentityTag = root != null ? root.gameObject.tag : gameObject.tag;
+        return root != null ? root.gameObject.tag : gameObject.tag;
     }
 
     private void ResolveTeamIdentity()

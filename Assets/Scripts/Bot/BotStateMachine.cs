@@ -47,7 +47,7 @@ public class BotStateMachine : MonoBehaviour
         if (controller == null || controller.Settings == null) return;
 
         BotSettings s = controller.Settings;
-        bool hasTarget = controller.CurrentTarget != null;
+        bool hasTarget = controller.HasValidCurrentTarget;
         PerceptionStatus status = controller.Perception != null ? controller.Perception.Status : PerceptionStatus.None;
         float dist = controller.DistanceToPlayer;
         bool visible = hasTarget && status == PerceptionStatus.Visible;
@@ -117,12 +117,8 @@ public class BotStateMachine : MonoBehaviour
         }
         else
         {
-            // Kondisi 1: tidak pernah ditembak player → Patrol / Idle.
-            // Kondisi 2: sudah pernah ditembak player → Chase (mengejar dan menembak).
-            if (controller.HasBeenDamagedRecently && hasTarget)
-                desired = BotState.Chase;
-            else
-                desired = controller.HasPatrolPoints ? BotState.Patrol : BotState.Idle;
+            // Tidak ada perception valid: jangan mengejar hanya karena pernah ditembak.
+            desired = controller.HasPatrolPoints ? BotState.Patrol : BotState.Idle;
         }
 
         // keep investigate/search/flee for their duration if no new info
