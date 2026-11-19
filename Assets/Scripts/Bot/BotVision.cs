@@ -47,6 +47,13 @@ public class BotVision : MonoBehaviour
         lastSeenTime = -999f;
     }
 
+    public void SetLastKnownPosition(Vector3 pos)
+    {
+        lastSeenPosition = pos;
+        lastSeenTime = Time.time;
+        hasLastSeen = true;
+    }
+
     public void SetEye(Transform t) { if (t != null) eye = t; }
 
     // Called periodically by BotController.

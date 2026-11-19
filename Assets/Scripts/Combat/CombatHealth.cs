@@ -31,7 +31,17 @@ public class CombatHealth : MonoBehaviour, IDamageable
     public bool IsDead => CurrentHealth <= 0f;
     private CombatHealth lastAttacker;
 
+    public struct DamageInfo
+    {
+        public float Amount;
+        public CombatHealth Attacker;
+        public CombatHealth Victim;
+        public Vector3 HitPosition;
+        public float Time;
+    }
+
     public event System.Action<float> OnTakeDamage;
+    public event System.Action<DamageInfo> OnDamageReceived;
 
     [Header("Kill Reward")]
     [Tooltip("Jumlah kredit minimum yang diberikan kepada pembunuh saat kill.")]
@@ -179,6 +189,15 @@ public class CombatHealth : MonoBehaviour, IDamageable
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
 
+        var damageInfo = new DamageInfo
+        {
+            Amount = amount,
+            Attacker = attacker,
+            Victim = this,
+            HitPosition = transform.position,
+            Time = Time.time
+        };
+        OnDamageReceived?.Invoke(damageInfo);
         OnTakeDamage?.Invoke(amount);
 
         if (IsDead)

@@ -53,6 +53,12 @@ public class BotController : MonoBehaviour
     private float lastChargeTime = -999f;
     private float _lastShootDebugTime = -999f;
     private Transform _lastAcquiredTarget;
+    private Transform _lastAimTarget;
+
+    // Retaliation memory.
+    private CombatHealth retaliationAttacker;
+    private float retaliationAttackerTime = -999f;
+    private bool damageInterruptPending = false;
 
     // Reaksi: jeda sebelum bot merespons pemain yang baru terlihat.
     private float reactionTimer;
@@ -73,6 +79,11 @@ public class BotController : MonoBehaviour
 
     public bool HasBeenDamagedRecently =>
         settings != null && Time.time - lastDamageTime <= settings.DamageMemoryDuration;
+
+    public bool DamageInterruptPending => damageInterruptPending;
+    public void ClearDamageInterrupt() { damageInterruptPending = false; }
+
+    public CombatHealth RetaliationAttacker => retaliationAttacker;
 
     public float LastChargeTime => lastChargeTime;
 
@@ -159,7 +170,7 @@ public class BotController : MonoBehaviour
 
         // Subscribe ke damage agar bot dapat pelarian saat ditembak.
         if (health != null)
-            health.OnTakeDamage += OnBotTakeDamage;
+            health.OnDamageReceived += OnBotDamageReceived;
 
         visionTimer = settings.VisionCheckInterval;
         stateEvalTimer = settings.StateEvaluationInterval;
@@ -185,9 +196,38 @@ public class BotController : MonoBehaviour
         hasLastPlayerVelocity = false;
     }
 
-    private void OnBotTakeDamage(float amount)
+    private void OnBotDamageReceived(CombatHealth.DamageInfo info)
     {
         lastDamageTime = Time.time;
+
+        CombatHealth attacker = info.Attacker;
+        if (IsValidRetaliationAttacker(attacker))
+        {
+            bool changed = retaliationAttacker != attacker;
+            retaliationAttacker = attacker;
+            retaliationAttackerTime = Time.time;
+            damageInterruptPending = true;
+
+            // Update posisi terakhir attacker untuk pencarian.
+            if (vision != null)
+                vision.SetLastKnownPosition(attacker.transform.position);
+
+            // Reset aim tracking agar menghadap attacker baru.
+            hasTrackedAimPosition = false;
+            aimReactionTimer = 0f;
+
+            if (changed)
+            {
+                Debug.Log($"[BotDamage] {gameObject.name} received {info.Amount} damage from {attacker.gameObject.name} (team {attacker.Team}).", this);
+            }
+
+            // Paksa re-acquire target agar retaliation prioritas diterapkan.
+            AcquireTarget();
+        }
+        else
+        {
+            Debug.Log($"[BotDamage] {gameObject.name} received {info.Amount} damage; retaliation rejected (attacker invalid).", this);
+        }
 
         // Cooldown charge: jika masih dalam cooldown, tidak charge lagi.
         if (settings != null && Time.time - lastChargeTime < settings.ChargeCooldown)
@@ -201,6 +241,21 @@ public class BotController : MonoBehaviour
         isCrouching = false;
         crouchTimer = 0f;
         crouchCooldownTimer = 0f;
+
+        // Paksa evaluasi state lebih cepat.
+        stateEvalTimer = 0f;
+    }
+
+    private bool IsValidRetaliationAttacker(CombatHealth attacker)
+    {
+        if (attacker == null || health == null) return false;
+        if (attacker == health) return false;
+        if (attacker.gameObject == null || !attacker.gameObject.activeInHierarchy || !attacker.enabled) return false;
+        if (attacker.IsDead) return false;
+        if (attacker.Team == Team.None) return false;
+        if (health.Team == Team.None) return false;
+        if (attacker.Team == health.Team) return false;
+        return true;
     }
 
     private void Start()
@@ -218,8 +273,27 @@ public class BotController : MonoBehaviour
         CombatHealth targetHealth = playerTarget != null ? playerTarget.GetComponent<CombatHealth>() : null;
         bool invalidTarget = playerTarget == null || targetHealth == null || targetHealth.IsDead ||
             targetHealth.Team == Team.None || (health != null && targetHealth.Team == health.Team);
+
+        // Retaliation memory expiry.
+        bool retaliationExpired = retaliationAttacker != null &&
+            (settings == null || Time.time - retaliationAttackerTime > settings.DamageMemoryDuration ||
+             !IsValidRetaliationAttacker(retaliationAttacker));
+        if (retaliationExpired)
+        {
+            retaliationAttacker = null;
+            invalidTarget = true;
+        }
+
         if (invalidTarget)
             AcquireTarget();
+
+        // Reset aim tracking saat target berubah.
+        if (_lastAimTarget != playerTarget)
+        {
+            _lastAimTarget = playerTarget;
+            hasTrackedAimPosition = false;
+            aimReactionTimer = 0f;
+        }
 
         // Sync aim target senjata bot ke target saat ini.
         if (weaponController != null)
@@ -502,15 +576,41 @@ public class BotController : MonoBehaviour
             return;
         }
 
-        CombatHealth enemy = TeamRegistry.FindNearestEnemy(transform.position, selfTeam, transform);
-        playerTarget = enemy != null ? enemy.transform : null;
-
-        if (enemy != null)
+        // Bersihkan retaliation attacker yang tidak valid / kedaluwarsa.
+        if (retaliationAttacker != null)
         {
-            if (_lastAcquiredTarget != enemy.transform)
+            if (!IsValidRetaliationAttacker(retaliationAttacker) ||
+                (settings != null && Time.time - retaliationAttackerTime > settings.DamageMemoryDuration))
             {
-                Debug.Log($"[BotController] {gameObject.name} (tim {selfTeam}) memilih target {enemy.gameObject.name} (tim {enemy.Team}).", this);
-                _lastAcquiredTarget = enemy.transform;
+                retaliationAttacker = null;
+            }
+        }
+
+        CombatHealth chosen = null;
+        // Prioritas 1: attacker yang baru saja menyerang (jika masih valid).
+        if (retaliationAttacker != null)
+        {
+            chosen = retaliationAttacker;
+        }
+        else
+        {
+            chosen = TeamRegistry.FindNearestEnemy(transform.position, selfTeam, transform);
+        }
+
+        // Fallback jika pilihan tidak valid.
+        if (chosen == null)
+        {
+            chosen = TeamRegistry.FindNearestEnemy(transform.position, selfTeam, transform);
+        }
+
+        playerTarget = chosen != null ? chosen.transform : null;
+
+        if (chosen != null)
+        {
+            if (_lastAcquiredTarget != chosen.transform)
+            {
+                Debug.Log($"[BotController] {gameObject.name} (tim {selfTeam}) memilih target {chosen.gameObject.name} (tim {chosen.Team}){(retaliationAttacker == chosen ? " [retaliation]" : "")}.", this);
+                _lastAcquiredTarget = chosen.transform;
             }
         }
         else

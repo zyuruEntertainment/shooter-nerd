@@ -52,6 +52,7 @@ public class BotStateMachine : MonoBehaviour
         float dist = controller.DistanceToPlayer;
         bool visible = hasTarget && status == PerceptionStatus.Visible;
         bool canReact = controller.CanReact;
+        bool damageInterrupt = controller.DamageInterruptPending;
 
         // handle recover timer
         if (controller.JustDashed)
@@ -141,6 +142,13 @@ public class BotStateMachine : MonoBehaviour
 
         // Pemain terlihat dapat menginterupsi, tapi hanya jika reaksi sudah lewat.
         bool interrupt = visible && canReact;
+
+        // Damage retaliation memiliki prioritas lebih tinggi.
+        if (damageInterrupt)
+        {
+            interrupt = true;
+            controller.ClearDamageInterrupt();
+        }
 
         if (interrupt || canSwitch)
         {
