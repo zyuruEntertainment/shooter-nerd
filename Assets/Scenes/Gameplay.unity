@@ -1369,6 +1369,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArcadeWeaponController
   aimCamera: {fileID: 1719682747}
+  aimOrigin: {fileID: 0}
   crosshair: {fileID: 75339588}
   ammoText: {fileID: 566735136}
   spriteController: {fileID: 151998545}
@@ -2565,6 +2566,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArcadeWeaponController
   aimCamera: {fileID: 135504270}
+  aimOrigin: {fileID: 0}
   crosshair: {fileID: 75339588}
   ammoText: {fileID: 566735136}
   spriteController: {fileID: 985077523}
@@ -3295,6 +3297,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArcadeWeaponController
   aimCamera: {fileID: 1928560417}
+  aimOrigin: {fileID: 0}
   crosshair: {fileID: 75339588}
   ammoText: {fileID: 566735136}
   spriteController: {fileID: 1112024335}
@@ -5110,6 +5113,11 @@ Transform:
   - {fileID: 324036313}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &2125861071 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 229196056775725078, guid: be53475310485ba4b803e84548afc7b2, type: 3}
+  m_PrefabInstance: {fileID: 5046896550400937213}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &214654643401391891
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5697,6 +5705,10 @@ PrefabInstance:
       propertyPath: crosshair
       value: 
       objectReference: {fileID: 9218816580816052320}
+    - target: {fileID: 74464650883802570, guid: be53475310485ba4b803e84548afc7b2, type: 3}
+      propertyPath: weaponModelParent
+      value: 
+      objectReference: {fileID: 2125861071}
     - target: {fileID: 229196056775725078, guid: be53475310485ba4b803e84548afc7b2, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.377
