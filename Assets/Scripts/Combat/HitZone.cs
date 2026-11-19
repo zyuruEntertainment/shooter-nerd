@@ -52,17 +52,20 @@ public class HitZone : MonoBehaviour
         if (attacker != null && attacker == owner)
             return;
 
-        // Validasi tim sebelum menerapkan damage (termasuk headshot multiplier).
+        // Validasi identitas tag sebelum menerapkan damage (termasuk headshot multiplier).
         if (attacker != null && attacker != owner)
         {
-            if (attacker.Team == Team.None || owner.Team == Team.None)
+            string attackerTag = attacker.IdentityTag;
+            string ownerTag = owner.IdentityTag;
+
+            if (!CombatHealth.IsValidIdentityTag(attackerTag) || !CombatHealth.IsValidIdentityTag(ownerTag))
             {
-                Debug.LogWarning($"[HitZone] Damage diblokir karena tim tidak valid: {attacker.gameObject.name} ({attacker.Team}) -> {owner.gameObject.name} ({owner.Team}).", this);
+                Debug.LogWarning($"[HitZone] Damage diblokir karena identitas tidak valid: {attacker.gameObject.name} ({attackerTag}) -> {owner.gameObject.name} ({ownerTag}).", this);
                 return;
             }
-            if (attacker.Team == owner.Team)
+            if (attackerTag == ownerTag)
             {
-                Debug.LogWarning($"[HitZone] Friendly fire diblokir: {attacker.gameObject.name} ({attacker.Team}) -> {owner.gameObject.name} ({owner.Team}).", this);
+                Debug.LogWarning($"[HitZone] Friendly fire diblokir: {attacker.gameObject.name} ({attackerTag}) -> {owner.gameObject.name} ({ownerTag}).", this);
                 return;
             }
         }

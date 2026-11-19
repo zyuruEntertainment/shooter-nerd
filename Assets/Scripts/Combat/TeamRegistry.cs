@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Registry sederhana untuk mencari target musuh berdasarkan tim.
+/// Registry sederhana untuk mencari target musuh berdasarkan identitas tag.
 /// </summary>
 public static class TeamRegistry
 {
@@ -19,9 +19,9 @@ public static class TeamRegistry
     public static void Register(CombatHealth health)
     {
         if (health == null) return;
-        if (health.Team == Team.None)
+        if (!CombatHealth.IsValidIdentityTag(health.IdentityTag))
         {
-            Debug.LogWarning($"[TeamRegistry] Registrasi objek dengan tim tidak valid (None): {health.gameObject.name}.", health);
+            Debug.LogWarning($"[TeamRegistry] Registrasi objek dengan identitas tidak valid: {health.gameObject.name} (tag='{health.IdentityTag}').", health);
         }
         if (!members.Contains(health))
             members.Add(health);
@@ -38,17 +38,17 @@ public static class TeamRegistry
         members.Clear();
     }
 
-    /// <summary>Cari musuh terdekat yang tim-nya berbeda (dan valid). Tidak pernah mengembalikan teammate.</summary>
-    public static CombatHealth FindNearestEnemy(Vector3 position, Team selfTeam)
+    /// <summary>Cari musuh terdekat dengan tag berbeda. Tidak pernah mengembalikan teammate.</summary>
+    public static CombatHealth FindNearestEnemy(Vector3 position, string selfTag)
     {
-        return FindNearestEnemy(position, selfTeam, null);
+        return FindNearestEnemy(position, selfTag, null);
     }
 
-    public static CombatHealth FindNearestEnemy(Vector3 position, Team selfTeam, Transform self)
+    public static CombatHealth FindNearestEnemy(Vector3 position, string selfTag, Transform self)
     {
-        if (selfTeam == Team.None)
+        if (!CombatHealth.IsValidIdentityTag(selfTag))
         {
-            Debug.LogWarning("[TeamRegistry] FindNearestEnemy dipanggil dengan selfTeam=None. Tidak ada target valid.");
+            Debug.LogWarning("[TeamRegistry] FindNearestEnemy dipanggil dengan identitas tidak valid. Tidak ada target valid.");
             return null;
         }
 
@@ -73,11 +73,11 @@ public static class TeamRegistry
 
             if (m.IsDead) continue;
 
-            // Tim tidak valid tidak boleh menjadi target (atau penyerang).
-            if (m.Team == Team.None) continue;
+            // Identitas tidak valid tidak boleh menjadi target.
+            if (!CombatHealth.IsValidIdentityTag(m.IdentityTag)) continue;
 
-            // Jangan pernah kembalikan teammate.
-            if (m.Team == selfTeam) continue;
+            // Jangan pernah kembalikan teammate (tag sama).
+            if (m.IdentityTag == selfTag) continue;
 
             // Jangan pernah kembalikan diri sendiri.
             if (self != null && (m.transform == self || m.transform.IsChildOf(self) || self.IsChildOf(m.transform)))

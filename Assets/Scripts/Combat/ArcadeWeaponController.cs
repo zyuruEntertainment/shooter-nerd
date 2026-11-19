@@ -448,7 +448,7 @@ public class ArcadeWeaponController : MonoBehaviour
             CombatHealth resolvedHealth = hit.collider != null ? hit.collider.GetComponentInParent<CombatHealth>() : null;
             HitZone resolvedZone = hit.collider != null ? hit.collider.GetComponentInParent<HitZone>() : null;
             CombatHealth owner = resolvedZone != null ? resolvedZone.Owner : resolvedHealth;
-            Debug.Log($"[BotWeapon] {gameObject.name}: intended={botAimTarget.name}, hit={(hit.collider != null ? hit.collider.name : "none")}, owner={(owner != null ? owner.gameObject.name : "none")} (team {(owner != null ? owner.Team.ToString() : "None")}).", this);
+            Debug.Log($"[BotWeapon] {gameObject.name}: intended={botAimTarget.name}, hit={(hit.collider != null ? hit.collider.name : "none")}, owner={(owner != null ? owner.gameObject.name : "none")} (tag {(owner != null ? owner.IdentityTag : "None")}).", this);
         }
 
         CombatHealth ownHealth = GetComponentInParent<CombatHealth>();
@@ -482,20 +482,22 @@ public class ArcadeWeaponController : MonoBehaviour
             CombatHealth health = hit.collider.GetComponentInParent<CombatHealth>();
 
             CombatHealth ownHealth = GetComponentInParent<CombatHealth>();
-            bool isEnemyTeam = health != null && health != ownHealth &&
-                ownHealth != null && ownHealth.Team != Team.None &&
-                health.Team != Team.None && ownHealth.Team != health.Team;
+            bool isEnemyTag = health != null && health != ownHealth &&
+                ownHealth != null && CombatHealth.IsValidIdentityTag(ownHealth.IdentityTag) &&
+                CombatHealth.IsValidIdentityTag(health.IdentityTag) &&
+                ownHealth.IdentityTag != health.IdentityTag;
 
-            // HitZone hanya dianggap musuh jika owner-nya musuh (team validation sama).
+            // HitZone hanya dianggap musuh jika owner-nya musuh (tag validation sama).
             bool zoneIsEnemy = false;
             if (zone != null && zone.Owner != null && ownHealth != null)
             {
                 zoneIsEnemy = zone.Owner != ownHealth &&
-                    ownHealth.Team != Team.None && zone.Owner.Team != Team.None &&
-                    ownHealth.Team != zone.Owner.Team;
+                    CombatHealth.IsValidIdentityTag(ownHealth.IdentityTag) &&
+                    CombatHealth.IsValidIdentityTag(zone.Owner.IdentityTag) &&
+                    ownHealth.IdentityTag != zone.Owner.IdentityTag;
             }
 
-            targetingEnemy = zoneIsEnemy || isEnemyTeam;
+            targetingEnemy = zoneIsEnemy || isEnemyTag;
         }
 
         crosshair.color = targetingEnemy ? targetCrosshairColor : normalCrosshairColor;

@@ -218,7 +218,7 @@ public class BotController : MonoBehaviour
 
             if (changed)
             {
-                Debug.Log($"[BotDamage] {gameObject.name} received {info.Amount} damage from {attacker.gameObject.name} (team {attacker.Team}).", this);
+                Debug.Log($"[BotDamage] {gameObject.name} received {info.Amount} damage from {attacker.gameObject.name} (tag {attacker.IdentityTag}).", this);
             }
 
             // Paksa re-acquire target agar retaliation prioritas diterapkan.
@@ -252,9 +252,9 @@ public class BotController : MonoBehaviour
         if (attacker == health) return false;
         if (attacker.gameObject == null || !attacker.gameObject.activeInHierarchy || !attacker.enabled) return false;
         if (attacker.IsDead) return false;
-        if (attacker.Team == Team.None) return false;
-        if (health.Team == Team.None) return false;
-        if (attacker.Team == health.Team) return false;
+        if (!CombatHealth.IsValidIdentityTag(attacker.IdentityTag)) return false;
+        if (!CombatHealth.IsValidIdentityTag(health.IdentityTag)) return false;
+        if (attacker.IdentityTag == health.IdentityTag) return false;
         return true;
     }
 
@@ -269,10 +269,11 @@ public class BotController : MonoBehaviour
 
         float dt = Time.deltaTime;
 
-        // Re-acquire target musuh jika target null/mati/invalid/tim sama.
+        // Re-acquire target musuh jika target null/mati/invalid/identitas sama.
         CombatHealth targetHealth = playerTarget != null ? playerTarget.GetComponent<CombatHealth>() : null;
         bool invalidTarget = playerTarget == null || targetHealth == null || targetHealth.IsDead ||
-            targetHealth.Team == Team.None || (health != null && targetHealth.Team == health.Team);
+            !CombatHealth.IsValidIdentityTag(targetHealth.IdentityTag) ||
+            (health != null && targetHealth.IdentityTag == health.IdentityTag);
 
         // Retaliation memory expiry.
         bool retaliationExpired = retaliationAttacker != null &&
@@ -567,10 +568,10 @@ public class BotController : MonoBehaviour
             return;
         }
 
-        Team selfTeam = health.Team;
-        if (selfTeam == Team.None)
+        string selfTag = health.IdentityTag;
+        if (!CombatHealth.IsValidIdentityTag(selfTag))
         {
-            Debug.LogWarning($"[BotController] {gameObject.name} tim tidak valid (None); target tidak diakuisisi.", this);
+            Debug.LogWarning($"[BotController] {gameObject.name} identitas tidak valid ('{selfTag}'); target tidak diakuisisi.", this);
             playerTarget = null;
             if (vision != null) vision.SetTarget(null);
             return;
@@ -594,13 +595,13 @@ public class BotController : MonoBehaviour
         }
         else
         {
-            chosen = TeamRegistry.FindNearestEnemy(transform.position, selfTeam, transform);
+            chosen = TeamRegistry.FindNearestEnemy(transform.position, selfTag, transform);
         }
 
         // Fallback jika pilihan tidak valid.
         if (chosen == null)
         {
-            chosen = TeamRegistry.FindNearestEnemy(transform.position, selfTeam, transform);
+            chosen = TeamRegistry.FindNearestEnemy(transform.position, selfTag, transform);
         }
 
         playerTarget = chosen != null ? chosen.transform : null;
@@ -609,7 +610,7 @@ public class BotController : MonoBehaviour
         {
             if (_lastAcquiredTarget != chosen.transform)
             {
-                Debug.Log($"[BotController] {gameObject.name} (tim {selfTeam}) memilih target {chosen.gameObject.name} (tim {chosen.Team}){(retaliationAttacker == chosen ? " [retaliation]" : "")}.", this);
+                Debug.Log($"[BotController] {gameObject.name} (tag {selfTag}) memilih target {chosen.gameObject.name} (tag {chosen.IdentityTag}){(retaliationAttacker == chosen ? " [retaliation]" : "")}.", this);
                 _lastAcquiredTarget = chosen.transform;
             }
         }
@@ -617,7 +618,7 @@ public class BotController : MonoBehaviour
         {
             if (_lastAcquiredTarget != null)
             {
-                Debug.LogWarning($"[BotController] {gameObject.name} (tim {selfTeam}) tidak menemukan musuh valid.", this);
+                Debug.LogWarning($"[BotController] {gameObject.name} (tag {selfTag}) tidak menemukan musuh valid.", this);
                 _lastAcquiredTarget = null;
             }
         }

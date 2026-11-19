@@ -23,6 +23,15 @@ public class CombatHealth : MonoBehaviour, IDamageable
     private Team resolvedTeam = Team.None;
     private bool identityResolved = false;
 
+    // Identitas targeting berbasis tag GameObject (exact tag).
+    private string resolvedIdentityTag = string.Empty;
+    public string IdentityTag => resolvedIdentityTag;
+
+    public static bool IsValidIdentityTag(string tag)
+    {
+        return !string.IsNullOrEmpty(tag) && tag != "Untagged";
+    }
+
     public Team Team => identityResolved ? resolvedTeam : team;
     public Team ResolvedTeam => Team;
 
@@ -52,9 +61,23 @@ public class CombatHealth : MonoBehaviour, IDamageable
     private void Awake()
     {
         ResolveTeamIdentity();
+        ResolveIdentityTag();
 
         CurrentHealth = maxHealth;
         TeamRegistry.Register(this);
+    }
+
+    private void ResolveIdentityTag()
+    {
+        Transform root = transform;
+        while (root.parent != null)
+        {
+            var parentHealth = root.parent.GetComponent<CombatHealth>();
+            if (parentHealth != null && parentHealth != this)
+                break;
+            root = root.parent;
+        }
+        resolvedIdentityTag = root != null ? root.gameObject.tag : gameObject.tag;
     }
 
     private void ResolveTeamIdentity()
@@ -165,21 +188,23 @@ public class CombatHealth : MonoBehaviour, IDamageable
         if (IsDead || amount <= 0f)
             return;
 
-        // Validasi tim sebelum menerapkan damage.
+        // Validasi identitas tag sebelum menerapkan damage.
         if (attacker != null && attacker != this)
         {
-            Team myTeam = Team;
-            // Tim yang sama: cegah friendly fire.
-            if (attacker.Team != Team.None && myTeam != Team.None && attacker.Team == myTeam)
+            string myTag = IdentityTag;
+            string attackerTag = attacker.IdentityTag;
+
+            // Identitas tidak valid: tolak damage.
+            if (!CombatHealth.IsValidIdentityTag(attackerTag) || !CombatHealth.IsValidIdentityTag(myTag))
             {
-                Debug.LogWarning($"[CombatHealth] Friendly fire diblokir: {attacker.gameObject.name} ({attacker.Team}) -> {gameObject.name} ({myTeam}).", this);
+                Debug.LogWarning($"[CombatHealth] Damage diblokir karena identitas tidak valid: attacker={attacker.gameObject.name} ({attackerTag}), victim={gameObject.name} ({myTag}).", this);
                 return;
             }
 
-            // Tim tidak valid (None): perilaku eksplisit = tolak damage (tidak diam-diam mengizinkan).
-            if (attacker.Team == Team.None || myTeam == Team.None)
+            // Tag sama: cegah friendly fire.
+            if (attackerTag == myTag)
             {
-                Debug.LogWarning($"[CombatHealth] Damage diblokir karena tim tidak valid: attacker={attacker.gameObject.name} ({attacker.Team}), victim={gameObject.name} ({myTeam}).", this);
+                Debug.LogWarning($"[CombatHealth] Friendly fire diblokir: {attacker.gameObject.name} ({attackerTag}) -> {gameObject.name} ({myTag}).", this);
                 return;
             }
         }
