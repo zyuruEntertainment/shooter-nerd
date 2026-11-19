@@ -11,6 +11,10 @@ public static class TeamRegistry
     public static void Register(CombatHealth health)
     {
         if (health == null) return;
+        if (health.Team == Team.None)
+        {
+            Debug.LogWarning($"[TeamRegistry] Registrasi objek dengan tim tidak valid (None): {health.gameObject.name}.", health);
+        }
         if (!members.Contains(health))
             members.Add(health);
     }
@@ -21,9 +25,15 @@ public static class TeamRegistry
         members.Remove(health);
     }
 
-    /// <summary>Cari musuh terdekat yang tim-nya berbeda (dan bukan None).</summary>
+    /// <summary>Cari musuh terdekat yang tim-nya berbeda (dan valid). Tidak pernah mengembalikan teammate.</summary>
     public static CombatHealth FindNearestEnemy(Vector3 position, Team selfTeam)
     {
+        if (selfTeam == Team.None)
+        {
+            Debug.LogWarning("[TeamRegistry] FindNearestEnemy dipanggil dengan selfTeam=None. Tidak ada target valid.");
+            return null;
+        }
+
         CombatHealth best = null;
         float bestSqr = float.MaxValue;
 
@@ -35,8 +45,17 @@ public static class TeamRegistry
                 members.RemoveAt(i);
                 continue;
             }
+
+            // Objek yang sudah dihancurkan / tidak aktif tidak boleh jadi target.
+            if (m.gameObject == null || !m.gameObject.activeInHierarchy)
+                continue;
+
             if (m.IsDead) continue;
-            if (m.Team == Team.None || selfTeam == Team.None) continue;
+
+            // Tim tidak valid tidak boleh menjadi target (atau penyerang).
+            if (m.Team == Team.None) continue;
+
+            // Jangan pernah kembalikan teammate.
             if (m.Team == selfTeam) continue;
 
             float sqr = (m.transform.position - position).sqrMagnitude;

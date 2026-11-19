@@ -52,6 +52,7 @@ public class BotController : MonoBehaviour
     private float lastDamageTime = -999f;
     private float lastChargeTime = -999f;
     private float _lastShootDebugTime = -999f;
+    private Transform _lastAcquiredTarget;
 
     // Reaksi: jeda sebelum bot merespons pemain yang baru terlihat.
     private float reactionTimer;
@@ -79,6 +80,7 @@ public class BotController : MonoBehaviour
     public BotPerception Perception => perception;
     public BotStateMachine StateMachine => stateMachine;
     public bool HasPatrolPoints => patrolPoints != null && patrolPoints.Length > 0;
+    public Transform CurrentTarget => playerTarget;
     public bool JustDashed => justDashed;
     public bool IsCharging => isCharging;
     public void ClearJustDashed() { justDashed = false; }
@@ -124,7 +126,10 @@ public class BotController : MonoBehaviour
 
         // Bot tidak boleh ikut input mouse global dari ArcadeWeaponController.
         if (weaponController != null)
+        {
             weaponController.AutoFireFromInput = false;
+            weaponController.SetAimOrigin(eyePoint != null ? eyePoint : transform);
+        }
         stateMachine = GetComponent<BotStateMachine>();
 
         controller = GetComponent<CharacterController>();
@@ -209,10 +214,17 @@ public class BotController : MonoBehaviour
 
         float dt = Time.deltaTime;
 
-        // Re-acquire target musuh jika target null/mati.
+        // Re-acquire target musuh jika target null/mati/invalid/tim sama.
         CombatHealth targetHealth = playerTarget != null ? playerTarget.GetComponent<CombatHealth>() : null;
-        if (playerTarget == null || (targetHealth != null && targetHealth.IsDead))
+        bool invalidTarget = playerTarget == null || targetHealth == null || targetHealth.IsDead ||
+            targetHealth.Team == Team.None || (health != null && targetHealth.Team == health.Team);
+        if (invalidTarget)
             AcquireTarget();
+
+        // Sync aim target senjata bot ke target saat ini.
+        if (weaponController != null)
+            weaponController.SetBotAimTarget(playerTarget);
+
         if (vision != null && vision.TargetTransform != playerTarget)
             vision.SetTarget(playerTarget);
 
@@ -330,6 +342,7 @@ public class BotController : MonoBehaviour
         bool hasWeapon = weaponController != null && weaponController.HasWeapon;
         bool hasAmmo = weaponController != null && weaponController.CurrentAmmo > 0;
         bool hasReserve = weaponController != null && weaponController.ReserveAmmo > 0;
+        bool inRange = weaponController != null && weaponController.IsTargetInRange(playerTarget);
 
         // AUTO-RELOAD: jika dalam combat, punya senjata, ammo habis, tapi masih ada reserve → reload otomatis.
         if (inCombatState && hasWeapon && !hasAmmo && hasReserve)
@@ -338,7 +351,7 @@ public class BotController : MonoBehaviour
             weaponController.Reload();
         }
 
-        bool canShoot = inCombatState && hasTarget && canSeePlayer && hasWeapon && hasAmmo;
+        bool canShoot = inCombatState && hasTarget && canSeePlayer && inRange && hasWeapon && hasAmmo;
 
         if (canShoot)
         {
@@ -353,7 +366,8 @@ public class BotController : MonoBehaviour
                 string reasons = "";
                 if (!inCombatState) reasons += "state tidak combat (" + curState + "), ";
                 if (!hasTarget) reasons += "no target, ";
-                if (!canSeePlayer) reasons += "tidak lihat player, ";
+                if (!canSeePlayer) reasons += "tidak lihat target / terhalang, ";
+                if (!inRange) reasons += "di luar jangkauan, ";
                 if (!hasWeapon) reasons += "tidak punya senjata, ";
                 if (!hasAmmo) reasons += "ammo habis, ";
                 Debug.LogWarning($"[BotController] {gameObject.name} tidak menembak: {reasons}");
@@ -471,13 +485,42 @@ public class BotController : MonoBehaviour
 
     private void AcquireTarget()
     {
-        if (health == null) return;
+        if (health == null)
+        {
+            Debug.LogError($"[BotController] {gameObject.name} tidak memiliki CombatHealth; tidak bisa acquire target.", this);
+            playerTarget = null;
+            if (vision != null) vision.SetTarget(null);
+            return;
+        }
 
         Team selfTeam = health.Team;
-        if (selfTeam == Team.None) selfTeam = Team.TeamB;
+        if (selfTeam == Team.None)
+        {
+            Debug.LogWarning($"[BotController] {gameObject.name} tim tidak valid (None); target tidak diakuisisi.", this);
+            playerTarget = null;
+            if (vision != null) vision.SetTarget(null);
+            return;
+        }
 
         CombatHealth enemy = TeamRegistry.FindNearestEnemy(transform.position, selfTeam);
         playerTarget = enemy != null ? enemy.transform : null;
+
+        if (enemy != null)
+        {
+            if (_lastAcquiredTarget != enemy.transform)
+            {
+                Debug.Log($"[BotController] {gameObject.name} (tim {selfTeam}) memilih target {enemy.gameObject.name} (tim {enemy.Team}).", this);
+                _lastAcquiredTarget = enemy.transform;
+            }
+        }
+        else
+        {
+            if (_lastAcquiredTarget != null)
+            {
+                Debug.LogWarning($"[BotController] {gameObject.name} (tim {selfTeam}) tidak menemukan musuh valid.", this);
+                _lastAcquiredTarget = null;
+            }
+        }
 
         if (vision != null) vision.SetTarget(playerTarget);
         if (playerTarget != null) lastPlayerPosition = playerTarget.position;

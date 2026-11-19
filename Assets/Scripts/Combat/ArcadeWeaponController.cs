@@ -16,6 +16,8 @@ public class ArcadeWeaponController : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private Camera aimCamera;
+    [Tooltip("Origin tembak untuk bot (muzzle/eye). Jika kosong, gunakan transform + offset.")]
+    [SerializeField] private Transform aimOrigin;
     [SerializeField] private Image crosshair;
     [SerializeField] private TMP_Text ammoText;
     [SerializeField] private PlayerSpriteController spriteController;
@@ -46,6 +48,30 @@ public class ArcadeWeaponController : MonoBehaviour
         set => autoFireFromInput = value;
     }
 
+    /// <summary>Target aim untuk bot (musuh yang dilacak). Null untuk player (pakai kamera).</summary>
+    public void SetBotAimTarget(Transform target) { botAimTarget = target; }
+
+    /// <summary>Origin aim/muzzle untuk bot.</summary>
+    public void SetAimOrigin(Transform origin) { if (origin != null) aimOrigin = origin; }
+
+    /// <summary>Apakah ada sumber aim yang valid (kamera untuk player, target untuk bot).</summary>
+    public bool HasAimSource => aimCamera != null || botAimTarget != null;
+
+    /// <summary>Posisi origin tembak.</summary>
+    public Vector3 GetAimOriginPosition()
+    {
+        if (aimOrigin != null) return aimOrigin.position;
+        return transform.position + Vector3.up * 1.2f;
+    }
+
+    /// <summary>Apakah target dalam jangkauan senjata.</summary>
+    public bool IsTargetInRange(Transform target)
+    {
+        if (target == null) return false;
+        float dist = Vector3.Distance(GetAimOriginPosition(), target.position);
+        return dist <= range;
+    }
+
     [Header("Target Detection")]
     [SerializeField] private LayerMask hitboxMask = ~0;
 
@@ -61,6 +87,7 @@ public class ArcadeWeaponController : MonoBehaviour
     private float nextFireTime;
     private bool mobileFireHeld;
     private bool loggedNoWeapon;
+    private Transform botAimTarget;
     private Coroutine shootingRoutine;
 
     private readonly Color normalCrosshairColor = Color.black;
@@ -86,7 +113,7 @@ public class ArcadeWeaponController : MonoBehaviour
         // Senjata hanya akan aktif setelah WeaponManager memanggil ApplyWeaponData.
         ClearWeapon();
 
-        if (aimCamera == null)
+        if (aimCamera == null && autoFireFromInput && GetComponent<BotController>() == null)
             aimCamera = Camera.main;
 
         if (spriteController == null)
@@ -117,7 +144,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
         KeepCrosshairCentered();
 
-        if (aimCamera == null)
+        if (aimCamera == null && autoFireFromInput && GetComponent<BotController>() == null)
             Debug.LogError("Weapon: Kamera belum dipasang.", this);
 
         UpdateAmmoUI();
@@ -315,23 +342,51 @@ public class ArcadeWeaponController : MonoBehaviour
 
     private Ray GetCenterAimRay()
     {
-        if (aimCamera == null)
-            return default;
+        if (aimCamera != null)
+            return aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
-        return aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        // Bot: arahkan dari origin ke target.
+        Vector3 origin = GetAimOriginPosition();
+        Vector3 dir = transform.forward;
+        if (botAimTarget != null)
+        {
+            Vector3 to = botAimTarget.position - origin;
+            if (to.sqrMagnitude > 0.0001f) dir = to.normalized;
+        }
+        return new Ray(origin, dir);
     }
 
     private bool TryGetTarget(out RaycastHit hit)
     {
         hit = default;
 
-        if (aimCamera == null)
+        if (aimCamera != null)
+        {
+            return Physics.Raycast(
+                GetCenterAimRay(),
+                out hit,
+                range,
+                hitboxMask,
+                QueryTriggerInteraction.Collide
+            );
+        }
+
+        // Bot: raycast dari origin/muzzle menuju target (tidak pakai Camera.main).
+        if (botAimTarget == null)
             return false;
 
+        Vector3 origin = GetAimOriginPosition();
+        Vector3 toTarget = botAimTarget.position - origin;
+        float targetDist = toTarget.magnitude;
+        if (targetDist <= 0.001f) return false;
+
+        Vector3 dir = toTarget / targetDist;
+        float rayDist = Mathf.Min(range, targetDist + 0.5f);
         return Physics.Raycast(
-            GetCenterAimRay(),
+            origin,
+            dir,
             out hit,
-            range,
+            rayDist,
             hitboxMask,
             QueryTriggerInteraction.Collide
         );
@@ -339,9 +394,9 @@ public class ArcadeWeaponController : MonoBehaviour
 
     public void Fire()
     {
-        if (!MatchManager.ShootingEnabled || !HasWeapon || currentAmmo <= 0 || aimCamera == null || isReloading)
+        if (!MatchManager.ShootingEnabled || !HasWeapon || currentAmmo <= 0 || isReloading || !HasAimSource)
         {
-            if (!HasWeapon && aimCamera != null && !loggedNoWeapon)
+            if (!HasWeapon && !loggedNoWeapon)
             {
                 loggedNoWeapon = true;
                 Debug.LogWarning($"[ArcadeWeaponController] {gameObject.name} Fire dibatalkan: HasWeapon=false (belum beli senjata)");
@@ -365,6 +420,12 @@ public class ArcadeWeaponController : MonoBehaviour
 
         if (!TryGetTarget(out RaycastHit hit))
             return;
+
+        // Diagnostik terkontrol: target raycast aktual saat bot menembak.
+        if (botAimTarget != null && aimCamera == null)
+        {
+            Debug.Log($"[ArcadeWeaponController] {gameObject.name} (bot) raycast target: {(hit.collider != null ? hit.collider.name : "none")} (intended {botAimTarget.name}).", this);
+        }
 
         CombatHealth ownHealth = GetComponentInParent<CombatHealth>();
         HitZone zone = hit.collider.GetComponentInParent<HitZone>();
@@ -395,8 +456,8 @@ public class ArcadeWeaponController : MonoBehaviour
 
             CombatHealth ownHealth = GetComponentInParent<CombatHealth>();
             bool isEnemyTeam = health != null && health != ownHealth &&
-                (ownHealth == null || ownHealth.Team == Team.None ||
-                 health.Team == Team.None || ownHealth.Team != health.Team);
+                ownHealth != null && ownHealth.Team != Team.None &&
+                health.Team != Team.None && ownHealth.Team != health.Team;
 
             targetingEnemy = zone != null ||
                 (health != null && health != ownHealth && isEnemyTeam);

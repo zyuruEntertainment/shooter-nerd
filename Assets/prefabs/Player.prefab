@@ -501,7 +501,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatHealth
   maxHealth: 100
-  team: 0
+  team: 1
   minKillReward: 250
   maxKillReward: 500
 --- !u!114 &74464650883802570

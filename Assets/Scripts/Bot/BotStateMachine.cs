@@ -22,6 +22,7 @@ public class BotStateMachine : MonoBehaviour
     public void SetState(BotState newState)
     {
         if (newState == CurrentState) return;
+        Debug.Log($"[BotStateMachine] {gameObject.name}: {CurrentState} -> {newState}");
         CurrentState = newState;
         stateStartTime = Time.time;
         ApplyStateTimer(newState);
@@ -46,9 +47,10 @@ public class BotStateMachine : MonoBehaviour
         if (controller == null || controller.Settings == null) return;
 
         BotSettings s = controller.Settings;
+        bool hasTarget = controller.CurrentTarget != null;
         PerceptionStatus status = controller.Perception != null ? controller.Perception.Status : PerceptionStatus.None;
         float dist = controller.DistanceToPlayer;
-        bool visible = status == PerceptionStatus.Visible;
+        bool visible = hasTarget && status == PerceptionStatus.Visible;
         bool canReact = controller.CanReact;
 
         // handle recover timer
@@ -60,7 +62,7 @@ public class BotStateMachine : MonoBehaviour
         }
 
         // Charge takes highest priority when bot just took damage.
-        if (controller.IsCharging)
+        if (controller.IsCharging && hasTarget)
         {
             if (CurrentState != BotState.Charge)
                 SetState(BotState.Charge);
@@ -68,6 +70,13 @@ public class BotStateMachine : MonoBehaviour
         }
 
         BotState desired = CurrentState;
+
+        // Tanpa target musuh yang valid, jangan masuk state bertempur.
+        if (!hasTarget && (CurrentState == BotState.Chase || CurrentState == BotState.Attack ||
+            CurrentState == BotState.Strafe || CurrentState == BotState.Charge))
+        {
+            desired = controller.HasPatrolPoints ? BotState.Patrol : BotState.Idle;
+        }
 
         // If currently charging but timer expired, decide next state.
         if (CurrentState == BotState.Charge && stateTimer <= 0f)
@@ -109,7 +118,7 @@ public class BotStateMachine : MonoBehaviour
         {
             // Kondisi 1: tidak pernah ditembak player → Patrol / Idle.
             // Kondisi 2: sudah pernah ditembak player → Chase (mengejar dan menembak).
-            if (controller.HasBeenDamagedRecently)
+            if (controller.HasBeenDamagedRecently && hasTarget)
                 desired = BotState.Chase;
             else
                 desired = controller.HasPatrolPoints ? BotState.Patrol : BotState.Idle;

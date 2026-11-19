@@ -34,11 +34,8 @@ public class BotVision : MonoBehaviour
 
     private void Start()
     {
-        if (target == null)
-        {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) target = player.transform;
-        }
+        // Target ditentukan oleh BotController (single source of truth).
+        // Tidak ada fallback Tag "Player" di sini untuk menghindari konflik.
     }
 
     public void SetTarget(Transform t) { target = t; }

@@ -36,7 +36,8 @@ public class CombatHealth : MonoBehaviour, IDamageable
 
     private void Awake()
     {
-        // Default tim berdasarkan tag agar tidak perlu edit prefab/scene.
+        // Penentuan tim yang andal: gunakan nilai Inspector jika valid,
+        // lalu fallback ke tag GameObject. Nilai yang tidak valid dicatat (tidak diam-diam).
         if (team == Team.None)
         {
             string t = tag.ToLowerInvariant();
@@ -44,6 +45,15 @@ public class CombatHealth : MonoBehaviour, IDamageable
                 team = Team.TeamA;
             else if (t == "enemy" || t == "teamb")
                 team = Team.TeamB;
+        }
+
+        if (team == Team.None)
+        {
+            Debug.LogWarning($"[CombatHealth] {gameObject.name} tidak memiliki tim valid (tag='{tag}'). Friendly fire tidak akan diterapkan secara diam-diam.", this);
+        }
+        else
+        {
+            Debug.Log($"[CombatHealth] {gameObject.name} tim = {team}.", this);
         }
 
         CurrentHealth = maxHealth;
@@ -65,12 +75,22 @@ public class CombatHealth : MonoBehaviour, IDamageable
         if (IsDead || amount <= 0f)
             return;
 
-        // Cegah friendly fire: tim yang sama tidak saling damage.
-        if (attacker != null && attacker != this &&
-            attacker.Team != Team.None && team != Team.None &&
-            attacker.Team == team)
+        // Validasi tim sebelum menerapkan damage.
+        if (attacker != null && attacker != this)
         {
-            return;
+            // Tim yang sama: cegah friendly fire.
+            if (attacker.Team != Team.None && team != Team.None && attacker.Team == team)
+            {
+                Debug.LogWarning($"[CombatHealth] Friendly fire diblokir: {attacker.gameObject.name} ({attacker.Team}) -> {gameObject.name} ({team}).", this);
+                return;
+            }
+
+            // Tim tidak valid (None): perilaku eksplisit = tolak damage (tidak diam-diam mengizinkan).
+            if (attacker.Team == Team.None || team == Team.None)
+            {
+                Debug.LogWarning($"[CombatHealth] Damage diblokir karena tim tidak valid: attacker={attacker.gameObject.name} ({attacker.Team}), victim={gameObject.name} ({team}).", this);
+                return;
+            }
         }
 
         if (attacker != null && attacker != this)

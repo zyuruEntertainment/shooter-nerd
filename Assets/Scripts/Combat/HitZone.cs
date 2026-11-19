@@ -47,6 +47,21 @@ public class HitZone : MonoBehaviour
         if (owner == null || owner.IsDead)
             return;
 
+        // Validasi tim sebelum menerapkan damage (termasuk headshot multiplier).
+        if (attacker != null && attacker != owner)
+        {
+            if (attacker.Team == Team.None || owner.Team == Team.None)
+            {
+                Debug.LogWarning($"[HitZone] Damage diblokir karena tim tidak valid: {attacker.gameObject.name} ({attacker.Team}) -> {owner.gameObject.name} ({owner.Team}).", this);
+                return;
+            }
+            if (attacker.Team == owner.Team)
+            {
+                Debug.LogWarning($"[HitZone] Friendly fire diblokir: {attacker.gameObject.name} ({attacker.Team}) -> {owner.gameObject.name} ({owner.Team}).", this);
+                return;
+            }
+        }
+
         float finalDamage =
             baseDamage * damageMultiplier;
 
