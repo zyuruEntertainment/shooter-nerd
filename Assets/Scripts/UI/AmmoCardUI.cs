@@ -10,14 +10,6 @@ public class AmmoCardUI : MonoBehaviour
     [Header("Item")]
     [SerializeField] private AmmoData ammoData;
 
-    [Header("Premium (pembelian luar game)")]
-    [Tooltip("Jika true, kartu hanya ditampilkan jika item sudah dibeli (status owned).")]
-    [SerializeField] private bool isPremium = false;
-    [Tooltip("Harga dalam cash untuk pembelian premium.")]
-    [SerializeField, Min(0)] private int premiumPrice = 0;
-    [Tooltip("ID unik item premium. Kosong = pakai nama ammo.")]
-    [SerializeField] private string premiumId = string.Empty;
-
     [Header("Card UI")]
     [SerializeField] private Image cardPanel;
     [SerializeField] private Button cardButton;
@@ -27,25 +19,6 @@ public class AmmoCardUI : MonoBehaviour
     [SerializeField] private Color selectedColor = Color.white;
 
     public AmmoData Ammo => ammoData;
-
-    public bool IsPremium => isPremium;
-    public int PremiumPrice => premiumPrice;
-    public string PremiumId => string.IsNullOrWhiteSpace(premiumId) ? (ammoData != null ? ammoData.AmmoName : string.Empty) : premiumId;
-
-    /// <summary>Terapkan data dari ShopItemAsset (premium, harga, id, nama) ke kartu.</summary>
-    public void ApplyShopItem(ShopItemAsset asset)
-    {
-        if (asset == null)
-            return;
-
-        isPremium = asset.IsPremium;
-        premiumPrice = asset.Price;
-        if (string.IsNullOrWhiteSpace(premiumId))
-            premiumId = asset.PremiumId;
-
-        if (asset.AmmoData != null)
-            ammoData = asset.AmmoData;
-    }
 
     private UnityAction onSelected;
 

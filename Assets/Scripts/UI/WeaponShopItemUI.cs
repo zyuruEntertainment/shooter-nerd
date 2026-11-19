@@ -103,7 +103,7 @@ public class WeaponShopItemUI : MonoBehaviour
         }
 
         if (actionText != null)
-            actionText.text = canAfford ? "BELI AMMO" : "TIDAK CUKUP";
+            actionText.text = canAfford ? "BUY AMMO" : "NOT ENOUGH";
 
         if (cardButton != null)
         {

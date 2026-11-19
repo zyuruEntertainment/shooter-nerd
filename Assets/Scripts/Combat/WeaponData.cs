@@ -27,6 +27,10 @@ public class WeaponData : ScriptableObject
     [Header("Model")]
     [SerializeField] private GameObject weaponModel;
 
+    [Header("Ammo")]
+    [Tooltip("Jika true, senjata memiliki ammo tak terbatas (tidak berkurang saat menembak).")]
+    [SerializeField] private bool infiniteAmmo = false;
+
     public string WeaponName => weaponName;
     public int Price => price;
     public Sprite Icon => icon;
@@ -41,4 +45,5 @@ public class WeaponData : ScriptableObject
     public AudioClip ReloadSound => reloadSound;
     public float ReloadTime => reloadTime;
     public GameObject WeaponModel => weaponModel;
+    public bool InfiniteAmmo => infiniteAmmo;
 }

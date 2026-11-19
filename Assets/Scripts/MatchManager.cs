@@ -14,8 +14,22 @@ public class MatchManager : MonoBehaviour
 
     public static MatchManager Instance { get; private set; }
 
+    public int RoundScoreToWin => roundScoreToWin;
+    public int MatchWinsToWin => matchWinsToWin;
+
+    public void SetMatchRules(int roundScoreToWin, int matchWinsToWin)
+    {
+        this.roundScoreToWin = Mathf.Max(1, roundScoreToWin);
+        this.matchWinsToWin = Mathf.Max(1, matchWinsToWin);
+        PlayerPrefs.SetInt("shooter_nerd_match_kill_to_win", this.roundScoreToWin);
+        PlayerPrefs.SetInt("shooter_nerd_match_win_to_win", this.matchWinsToWin);
+        PlayerPrefs.Save();
+        Debug.Log($"[MatchManager] Rules updated: killToWin={this.roundScoreToWin}, winToWin={this.matchWinsToWin}");
+    }
+
     [Header("References")]
     [SerializeField] private PointManager pointManager;
+    [SerializeField] private MatchSettingController matchSettingController;
 
     [Header("Rules")]
     [SerializeField, Min(1)] private int roundScoreToWin = 10;
@@ -49,6 +63,12 @@ public class MatchManager : MonoBehaviour
         Instance = this;
         ShootingEnabled = true;
         CombatStats.ResetPlayerStats();
+
+        // Terapkan konfigurasi dari Scene Menu (jika ada) agar konsisten antar scene.
+        int savedKill = PlayerPrefs.GetInt("shooter_nerd_match_kill_to_win", roundScoreToWin);
+        int savedWin = PlayerPrefs.GetInt("shooter_nerd_match_win_to_win", matchWinsToWin);
+        roundScoreToWin = Mathf.Max(1, savedKill);
+        matchWinsToWin = Mathf.Max(1, savedWin);
 
         // Sembunyikan banner di awal.
         if (winBannerRect != null) winBannerRect.gameObject.SetActive(false);

@@ -13,12 +13,6 @@ public class WeaponShopController : MonoBehaviour
 {
     public static WeaponShopController Instance { get; private set; }
 
-    [Header("Katalog Toko - Weapon")]
-    [SerializeField] private WeaponData[] weapons;
-
-    [Header("Katalog Toko - Ammo")]
-    [SerializeField] private AmmoData[] ammos;
-
     [Header("Referensi UI")]
     [SerializeField] private TMP_Text creditsText;
     [SerializeField] private TMP_Text statusText;
@@ -36,35 +30,13 @@ public class WeaponShopController : MonoBehaviour
     private Button buyButton;
     private readonly List<WeaponCardUI> weaponCards = new List<WeaponCardUI>();
     private readonly List<AmmoCardUI> ammoCards = new List<AmmoCardUI>();
+    private readonly List<GrenadeCardUI> grenadeCards = new List<GrenadeCardUI>();
     private WeaponData selectedWeapon;
     private AmmoData selectedAmmo;
+    private GrenadeData selectedGrenade;
     private bool isInitialized;
     private bool isBuyingAmmo;
-
-    private void OnEnable()
-    {
-        PremiumOwnership.OnOwnershipChanged += HandlePremiumOwnershipChanged;
-    }
-
-    private void OnDisable()
-    {
-        PremiumOwnership.OnOwnershipChanged -= HandlePremiumOwnershipChanged;
-    }
-
-    private void HandlePremiumOwnershipChanged()
-    {
-        if (!isInitialized)
-            return;
-        RebuildCards();
-    }
-
-    private void RebuildCards()
-    {
-        weaponCards.Clear();
-        ammoCards.Clear();
-        BuildCards();
-        BuildAmmoCards();
-    }
+    private bool isBuyingGrenade;
 
     private void Awake()
     {
@@ -134,6 +106,7 @@ public class WeaponShopController : MonoBehaviour
 
         BuildCards();
         BuildAmmoCards();
+        BuildGrenadeCards();
         wallet.OnCreditsChanged += UpdateCredits;
         UpdateCredits(wallet.Credits);
         UpdateAmmoStatus();
@@ -202,8 +175,11 @@ public class WeaponShopController : MonoBehaviour
             // Data diambil dari konfigurasi prefab, bukan dari urutan child.
             if (card.Weapon != null)
             {
-                // Item premium yang belum dibeli tidak ditampilkan.
-                if (card.IsPremium && !PremiumOwnership.IsOwned(card.PremiumId))
+                // Filter katalog: hanya senjata yang diizinkan.
+                string wname = card.Weapon.WeaponName;
+                bool allowedWeapon = wname == "Sniper" || wname == "Plasma" || wname == "Katana" || wname == "KatanaInfinity" ||
+                                    wname == "AK-47" || wname == "winchester-1894";
+                if (!allowedWeapon)
                 {
                     card.gameObject.SetActive(false);
                     continue;
@@ -232,8 +208,10 @@ public class WeaponShopController : MonoBehaviour
             // Data diambil dari konfigurasi prefab, bukan dari urutan child.
             if (card.Ammo != null)
             {
-                // Item premium yang belum dibeli tidak ditampilkan.
-                if (card.IsPremium && !PremiumOwnership.IsOwned(card.PremiumId))
+                // Filter katalog: hanya ammo yang diizinkan.
+                string aname = card.Ammo.AmmoName;
+                bool allowedAmmo = aname == "SniperAmmo" || aname == "PlasmaEnergy" || aname == "Rifle Ammo" || aname == "Shotgun ammo";
+                if (!allowedAmmo)
                 {
                     card.gameObject.SetActive(false);
                     continue;
@@ -242,6 +220,28 @@ public class WeaponShopController : MonoBehaviour
                 card.gameObject.SetActive(true);
                 card.Initialize(card.Ammo, () => OnAmmoCardSelected(card));
                 ammoCards.Add(card);
+            }
+            else
+            {
+                card.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private void BuildGrenadeCards()
+    {
+        GrenadeCardUI[] found = GetComponentsInChildren<GrenadeCardUI>(true);
+
+        foreach (GrenadeCardUI card in found)
+        {
+            if (card == null)
+                continue;
+
+            if (card.Grenade != null)
+            {
+                card.gameObject.SetActive(true);
+                card.Initialize(card.Grenade, () => OnGrenadeCardSelected(card));
+                grenadeCards.Add(card);
             }
             else
             {
@@ -259,6 +259,10 @@ public class WeaponShopController : MonoBehaviour
             // Tidak ada weapon card, pilih ammo pertama.
             OnAmmoCardSelected(ammoCards[0]);
         }
+        else if (grenadeCards.Count > 0)
+        {
+            OnGrenadeCardSelected(grenadeCards[0]);
+        }
     }
 
     /// <summary>Pilih weapon card (dari UI).</summary>
@@ -268,7 +272,9 @@ public class WeaponShopController : MonoBehaviour
             return;
 
         isBuyingAmmo = false;
+        isBuyingGrenade = false;
         selectedAmmo = null;
+        selectedGrenade = null;
 
         // Hanya satu kartu yang boleh terpilih: yang dipilih putih, sisanya normal.
         foreach (WeaponCardUI c in weaponCards)
@@ -277,6 +283,11 @@ public class WeaponShopController : MonoBehaviour
                 c.SetSelected(c == card);
         }
         foreach (AmmoCardUI c in ammoCards)
+        {
+            if (c != null)
+                c.SetSelected(false);
+        }
+        foreach (GrenadeCardUI c in grenadeCards)
         {
             if (c != null)
                 c.SetSelected(false);
@@ -292,8 +303,10 @@ public class WeaponShopController : MonoBehaviour
             return;
 
         isBuyingAmmo = true;
+        isBuyingGrenade = false;
         selectedWeapon = null;
         selectedAmmo = card.Ammo;
+        selectedGrenade = null;
 
         // Kosongkan seleksi weapon card.
         foreach (WeaponCardUI c in weaponCards)
@@ -306,6 +319,32 @@ public class WeaponShopController : MonoBehaviour
             if (c != null)
                 c.SetSelected(c == card);
         }
+        foreach (GrenadeCardUI c in grenadeCards)
+        {
+            if (c != null)
+                c.SetSelected(false);
+        }
+
+        RefreshInfoPanel();
+    }
+
+    private void OnGrenadeCardSelected(GrenadeCardUI card)
+    {
+        if (card == null || card.Grenade == null)
+            return;
+
+        isBuyingGrenade = true;
+        isBuyingAmmo = false;
+        selectedWeapon = null;
+        selectedAmmo = null;
+        selectedGrenade = card.Grenade;
+
+        foreach (WeaponCardUI c in weaponCards)
+            if (c != null) c.SetSelected(false);
+        foreach (AmmoCardUI c in ammoCards)
+            if (c != null) c.SetSelected(false);
+        foreach (GrenadeCardUI c in grenadeCards)
+            if (c != null) c.SetSelected(c == card);
 
         RefreshInfoPanel();
     }
@@ -338,6 +377,13 @@ public class WeaponShopController : MonoBehaviour
             if (buyButton != null)
                 buyButton.interactable = !equipped;
         }
+        else if (isBuyingGrenade && selectedGrenade != null)
+        {
+            if (statusText != null)
+                statusText.text = selectedGrenade.GrenadeName + " - " + selectedGrenade.Price + " credits";
+            if (buyButton != null)
+                buyButton.interactable = wallet != null && wallet.CanAfford(selectedGrenade.Price);
+        }
     }
 
     public void OnBuyClicked()
@@ -345,6 +391,12 @@ public class WeaponShopController : MonoBehaviour
         if (isBuyingAmmo)
         {
             OnBuyAmmoClicked();
+            return;
+        }
+
+        if (isBuyingGrenade)
+        {
+            OnBuyGrenadeClicked();
             return;
         }
 
@@ -375,7 +427,7 @@ public class WeaponShopController : MonoBehaviour
         if (!wallet.CanAfford(selectedAmmo.Price))
         {
             if (statusText != null)
-                statusText.text = "Credits tidak cukup untuk beli ammo.";
+                statusText.text = "Not enough credits to buy ammo.";
             return;
         }
 
@@ -384,7 +436,7 @@ public class WeaponShopController : MonoBehaviour
         if (equipped == null || !selectedAmmo.IsCompatible(equipped))
         {
             if (statusText != null)
-                statusText.text = "Senjata aktif tidak cocok dengan ammo ini.";
+                statusText.text = "Active weapon is not compatible with this ammo.";
             Debug.LogWarning($"[WeaponShopController] Senjata equipped ({equipped?.WeaponName ?? "none"}) tidak cocok dengan ammo {selectedAmmo.AmmoName}");
             return;
         }
@@ -393,7 +445,7 @@ public class WeaponShopController : MonoBehaviour
         if (!wallet.TrySpend(selectedAmmo.Price))
         {
             if (statusText != null)
-                statusText.text = "Credits tidak cukup untuk beli ammo.";
+                statusText.text = "Not enough credits to buy ammo.";
             return;
         }
 
@@ -411,12 +463,38 @@ public class WeaponShopController : MonoBehaviour
         int reserveAfter = playerWeaponController != null ? playerWeaponController.ReserveAmmo : 0;
 
         if (statusText != null)
-            statusText.text = "Berbeli ammo " + selectedAmmo.AmmoName + " +" + selectedAmmo.AmountPerPurchase;
+            statusText.text = "Bought ammo " + selectedAmmo.AmmoName + " +" + selectedAmmo.AmountPerPurchase;
 
         UpdateCredits(wallet.Credits);
         UpdateAmmoStatus();
 
         Debug.Log($"[WeaponShopController] Beli ammo {selectedAmmo.AmmoName} +{selectedAmmo.AmountPerPurchase} untuk {equipped.WeaponName}. Reserve {reserveBefore}->{reserveAfter}. Sisa kredit {wallet.Credits}");
+    }
+
+    private void OnBuyGrenadeClicked()
+    {
+        if (selectedGrenade == null || wallet == null)
+            return;
+
+        if (!wallet.CanAfford(selectedGrenade.Price))
+        {
+            if (statusText != null)
+                statusText.text = "Not enough credits to buy grenade.";
+            return;
+        }
+
+        if (!wallet.TrySpend(selectedGrenade.Price))
+        {
+            if (statusText != null)
+                statusText.text = "Not enough credits to buy grenade.";
+            return;
+        }
+
+        if (statusText != null)
+            statusText.text = "Bought grenade " + selectedGrenade.GrenadeName;
+
+        UpdateCredits(wallet.Credits);
+        Debug.Log($"[WeaponShopController] Beli grenade {selectedGrenade.GrenadeName}. Sisa kredit {wallet.Credits}");
     }
 
     private void UpdateAmmoStatus()

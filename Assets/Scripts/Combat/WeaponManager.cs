@@ -79,26 +79,26 @@ public class WeaponManager : MonoBehaviour
 
         if (weapon == null)
         {
-            message = "Weapon data belum diatur.";
+            message = "Weapon data not configured.";
             return false;
         }
 
         if (IsOwned(weapon))
         {
             bool equipped = Equip(weapon);
-            message = equipped ? weapon.WeaponName + " equipped." : "Weapon controller tidak ditemukan.";
+            message = equipped ? weapon.WeaponName + " equipped." : "Weapon controller not found.";
             return equipped;
         }
 
         if (PlayerWallet.Instance == null)
         {
-            message = "PlayerWallet belum dipasang di scene Gameplay.";
+            message = "PlayerWallet not found in Gameplay scene.";
             return false;
         }
 
         if (!PlayerWallet.Instance.TrySpend(weapon.Price))
         {
-            message = "Credits tidak cukup.";
+            message = "Not enough credits.";
             return false;
         }
 
@@ -110,11 +110,11 @@ public class WeaponManager : MonoBehaviour
             PlayerWallet.Instance.AddCredits(weapon.Price);
             ownedWeapons.Remove(weapon);
             SyncAndSaveOwnership();
-            message = "Weapon controller tidak ditemukan - pastikan ArcadeWeaponController ada di scene.";
+            message = "Weapon controller not found - ensure ArcadeWeaponController is in scene.";
             return false;
         }
 
-        message = weapon.WeaponName + " berhasil dibeli dan dipakai.";
+        message = weapon.WeaponName + " purchased and equipped.";
         return true;
     }
 

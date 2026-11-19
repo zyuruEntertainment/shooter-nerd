@@ -51,6 +51,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
     private int currentAmmo;
     private int reserveAmmo;
+    private bool infiniteAmmo;
     private AudioClip shootSound;
     private AudioClip reloadSound;
 
@@ -132,6 +133,7 @@ public class ArcadeWeaponController : MonoBehaviour
         weaponName = "None";
         currentAmmo = 0;
         reserveAmmo = 0;
+        infiniteAmmo = false;
         nextFireTime = 0f;
         HasWeapon = false;
         shootSound = null;
@@ -171,6 +173,7 @@ public class ArcadeWeaponController : MonoBehaviour
         shootSound = data.ShootSound;
         reloadSound = data.ReloadSound;
         reloadTime = data.ReloadTime;
+        infiniteAmmo = data.InfiniteAmmo;
 
         // Batalkan reload yang sedang berjalan saat ganti senjata.
         isReloading = false;
@@ -196,7 +199,10 @@ public class ArcadeWeaponController : MonoBehaviour
         // Reset reserveAmmo ke nilai awal senjata ini; WeaponManager akan menimpa
         // dengan nilai persisten (reserveAmmoByWeapon) via SetReserveAmmo setelah ApplyWeaponData.
         // Jangan pertahankan nilai reserve dari senjata sebelumnya (mencegah "rifle jadi sniper ammo").
-        reserveAmmo = data.StartingReserveAmmo;
+        if (infiniteAmmo)
+            reserveAmmo = int.MaxValue;
+        else
+            reserveAmmo = data.StartingReserveAmmo;
 
         nextFireTime = 0f;
         HasWeapon = true;
@@ -255,6 +261,7 @@ public class ArcadeWeaponController : MonoBehaviour
                 ctrl.reserveAmmo = this.reserveAmmo;
                 ctrl.currentAmmo = this.currentAmmo;
                 ctrl.HasWeapon = this.HasWeapon;
+                ctrl.infiniteAmmo = this.infiniteAmmo;
                 ctrl.weaponName = this.weaponName;
                 ctrl.UpdateAmmoUI();
             }
@@ -347,7 +354,8 @@ public class ArcadeWeaponController : MonoBehaviour
         if (Time.time < nextFireTime)
             return;
 
-        currentAmmo--;
+        if (!infiniteAmmo)
+            currentAmmo--;
         nextFireTime = Time.time + interval;
 
         UpdateAmmoUI();
