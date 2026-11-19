@@ -39,9 +39,9 @@ public class SettingMatch : MonoBehaviour
         }
 
         if (killToWinInput != null)
-            killToWinInput.onValueChanged.AddListener(OnKillEdited);
+            killToWinInput.onEndEdit.AddListener(OnKillEdited);
         if (winToWinInput != null)
-            winToWinInput.onValueChanged.AddListener(OnWinEdited);
+            winToWinInput.onEndEdit.AddListener(OnWinEdited);
 
         // Muat nilai tersimpan (atau default) agar konsisten antar scene.
         int savedKill = PlayerPrefs.GetInt(PrefKillKey, MatchManager.Instance != null ? MatchManager.Instance.RoundScoreToWin : 10);
@@ -63,18 +63,16 @@ public class SettingMatch : MonoBehaviour
         WinToWin = Mathf.Max(1, winToWin);
 
         if (killToWinInput != null)
-            killToWinInput.text = KillToWin.ToString();
+            killToWinInput.SetTextWithoutNotify(KillToWin.ToString());
         if (winToWinInput != null)
-            winToWinInput.text = WinToWin.ToString();
+            winToWinInput.SetTextWithoutNotify(WinToWin.ToString());
     }
 
     private void OnKillEdited(string value)
     {
-        if (int.TryParse(value, out int parsed))
+        if (int.TryParse(value, out int parsed) && parsed >= 1)
         {
-            KillToWin = Mathf.Max(1, parsed);
-            if (killToWinInput != null)
-                killToWinInput.text = KillToWin.ToString();
+            KillToWin = parsed;
             PlayerPrefs.SetInt(PrefKillKey, KillToWin);
             PlayerPrefs.Save();
             if (MatchManager.Instance != null)
@@ -83,18 +81,17 @@ public class SettingMatch : MonoBehaviour
         }
         else
         {
+            // Pulihkan nilai valid sebelumnya tanpa memicu callback.
             if (killToWinInput != null)
-                killToWinInput.text = KillToWin.ToString();
+                killToWinInput.SetTextWithoutNotify(KillToWin.ToString());
         }
     }
 
     private void OnWinEdited(string value)
     {
-        if (int.TryParse(value, out int parsed))
+        if (int.TryParse(value, out int parsed) && parsed >= 1)
         {
-            WinToWin = Mathf.Max(1, parsed);
-            if (winToWinInput != null)
-                winToWinInput.text = WinToWin.ToString();
+            WinToWin = parsed;
             PlayerPrefs.SetInt(PrefWinKey, WinToWin);
             PlayerPrefs.Save();
             if (MatchManager.Instance != null)
@@ -104,7 +101,7 @@ public class SettingMatch : MonoBehaviour
         else
         {
             if (winToWinInput != null)
-                winToWinInput.text = WinToWin.ToString();
+                winToWinInput.SetTextWithoutNotify(WinToWin.ToString());
         }
     }
 }

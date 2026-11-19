@@ -8,14 +8,12 @@ using UnityEngine.SceneManagement;
 public static class TeamRegistry
 {
     private static readonly List<CombatHealth> members = new List<CombatHealth>();
-    private static bool sceneHooked = false;
 
     static TeamRegistry()
     {
         // Bersihkan registry saat scene baru dimuat (mencegah stale references).
         SceneManager.sceneLoaded += (scene, mode) => members.Clear();
         SceneManager.sceneUnloaded += (scene) => members.Clear();
-        sceneHooked = true;
     }
 
     public static void Register(CombatHealth health)
