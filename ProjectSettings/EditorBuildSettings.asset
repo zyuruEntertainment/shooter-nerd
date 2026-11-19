@@ -6,8 +6,26 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Intro.unity
+    guid: 304e4a1d67a2f954e8ba09204c6be816
+  - enabled: 1
+    path: Assets/Scenes/Menu.unity
+    guid: 1e1c48ebf5a5509469422cde403cc6f8
+  - enabled: 1
+    path: Assets/Scenes/ConfirmPlay.unity
+    guid: 9d8742e9eb18f214d8a49ecb55725c1f
+  - enabled: 1
+    path: Assets/Scenes/Setting.unity
+    guid: ce24eb5021bb8314d9a25a11e5fb6354
+  - enabled: 1
+    path: Assets/Scenes/Credits.unity
+    guid: 39803c17e61b0854192ad78bdd9f4515
+  - enabled: 1
     path: Assets/Scenes/Gameplay.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/Loading.unity
+    guid: 5ec38655e3547be4993008f9409504a1
   - enabled: 1
     path: Assets/Scenes/BuyMenu.unity
     guid: b9f6994c62f81ab42af3eb6d61113a0d
@@ -17,14 +35,5 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Result.unity
     guid: 6fb8b04eeb61c664899b791d9f5b2432
-  - enabled: 1
-    path: Assets/Scenes/Loading.unity
-    guid: 5ec38655e3547be4993008f9409504a1
-  - enabled: 1
-    path: Assets/Scenes/Menu.unity
-    guid: 1e1c48ebf5a5509469422cde403cc6f8
-  - enabled: 1
-    path: Assets/Scenes/ConfirmPlay.unity
-    guid: 9d8742e9eb18f214d8a49ecb55725c1f
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

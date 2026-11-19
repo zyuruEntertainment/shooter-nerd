@@ -15,8 +15,8 @@ MonoBehaviour:
   weaponName: Plasma
   price: 3000
   icon: {fileID: 21300000, guid: 93cae068ff33f0142a51622057cd5a73, type: 3}
-  damage: 1
-  fireInterval: 0.01
+  damage: 5
+  fireInterval: 0.05
   range: 120000
   magazineSize: 1000
   startingReserveAmmo: 24000
@@ -26,3 +26,4 @@ MonoBehaviour:
   reloadSound: {fileID: 8300000, guid: 5a40e807db49bf94b96210486732d14b, type: 3}
   reloadTime: 3
   weaponModel: {fileID: 4856116828846427068, guid: e7198fa532a8f0d46b2215fe77f6b99b, type: 3}
+  infiniteAmmo: 0

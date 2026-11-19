@@ -30,7 +30,7 @@ public class SettingMatch : MonoBehaviour
         // Jika input field belum di-assign (mis. karena prefab), coba cari otomatis di scene.
         if (killToWinInput == null || winToWinInput == null)
         {
-            var inputs = FindObjectsByType<TMP_InputField>(FindObjectsSortMode.None);
+            var inputs = FindObjectsByType<TMP_InputField>(FindObjectsInactive.Include);
             if (inputs != null && inputs.Length > 0)
             {
                 if (killToWinInput == null) killToWinInput = inputs[0];
