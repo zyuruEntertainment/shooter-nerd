@@ -67,15 +67,25 @@ public class CombatHealth : MonoBehaviour, IDamageable
 
     private string ResolveIdentityTag()
     {
-        Transform root = transform;
-        while (root.parent != null)
+        // Identitas berasal dari GameObject yang memiliki CombatHealth jika tag-nya valid.
+        if (CombatHealth.IsValidIdentityTag(gameObject.tag))
+            return gameObject.tag;
+
+        // Untuk CombatHealth pada child, cari ancestor terdekat dengan tag valid
+        // tanpa melewati CombatHealth lain.
+        Transform current = transform;
+        while (current.parent != null)
         {
-            var parentHealth = root.parent.GetComponent<CombatHealth>();
+            var parentHealth = current.parent.GetComponent<CombatHealth>();
             if (parentHealth != null && parentHealth != this)
                 break;
-            root = root.parent;
+
+            current = current.parent;
+            if (CombatHealth.IsValidIdentityTag(current.gameObject.tag))
+                return current.gameObject.tag;
         }
-        return root != null ? root.gameObject.tag : gameObject.tag;
+
+        return gameObject.tag;
     }
 
     private void ResolveTeamIdentity()

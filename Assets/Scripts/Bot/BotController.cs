@@ -433,7 +433,7 @@ public class BotController : MonoBehaviour
         // Hanya tembak jika dalam keadaan bertempur, player terlihat, dan punya senjata.
         bool inCombatState = curState == BotState.Attack || curState == BotState.Strafe ||
                              curState == BotState.Charge || curState == BotState.Chase;
-        bool hasTarget = playerTarget != null;
+        bool hasTarget = HasValidCurrentTarget;
         bool canSeePlayer = vision != null && vision.CanSeePlayer;
         bool hasWeapon = weaponController != null && weaponController.HasWeapon;
         bool hasAmmo = weaponController != null && weaponController.CurrentAmmo > 0;
