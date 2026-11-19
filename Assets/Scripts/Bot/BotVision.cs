@@ -35,10 +35,17 @@ public class BotVision : MonoBehaviour
     private void Start()
     {
         // Target ditentukan oleh BotController (single source of truth).
-        // Tidak ada fallback Tag "Player" di sini untuk menghindari konflik.
     }
 
-    public void SetTarget(Transform t) { target = t; }
+    public void SetTarget(Transform t)
+    {
+        if (t == target) return;
+        target = t;
+        // Reset stale visibility state saat target berubah.
+        CanSeePlayer = false;
+        hasLastSeen = false;
+        lastSeenTime = -999f;
+    }
 
     public void SetEye(Transform t) { if (t != null) eye = t; }
 
@@ -58,24 +65,41 @@ public class BotVision : MonoBehaviour
         float halfFov = settings.FieldOfView * 0.5f;
         if (Vector3.Angle(eye.forward, dir) > halfFov) return;
 
-        // raycast obstacle check
+        // raycast obstacle check: ignore bot's own colliders; target colliders (incl. child) do not block.
         float dist = Mathf.Sqrt(sqrDist);
-        RaycastHit hit;
-        if (Physics.Raycast(eye.position, dir, out hit, dist, settings.VisionObstacleMask))
+        RaycastHit[] hits = Physics.RaycastAll(eye.position, dir, dist, settings.VisionObstacleMask);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (var h in hits)
         {
-            // blocked if hit something that is not the player
-            if (hit.transform != target && !hit.transform.IsChildOf(target))
+            if (h.collider == null) continue;
+            Transform ht = h.transform;
+
+            // Abaikan collider milik bot sendiri.
+            if (ht == transform || ht.IsChildOf(transform) || transform.IsChildOf(ht))
+                continue;
+
+            // Jika mengenai target atau child-nya, terlihat.
+            if (ht == target || ht.IsChildOf(target) || target.IsChildOf(ht))
+            {
+                CanSeePlayer = true;
+                lastSeenPosition = target.position;
+                lastSeenTime = Time.time;
+                hasLastSeen = true;
                 return;
+            }
+
+            // Obstacle lain memblokir.
+            return;
         }
 
-        // visible
+        // Tidak ada hit yang memblokir.
         CanSeePlayer = true;
         lastSeenPosition = target.position;
         lastSeenTime = Time.time;
         hasLastSeen = true;
     }
 
-    // Force a check respecting interval timer externally; helper.
     public bool ShouldCheck(float dt)
     {
         visionTimer -= dt;

@@ -16,10 +16,15 @@ public class CombatHealth : MonoBehaviour, IDamageable
     [SerializeField, Min(1f)] private float maxHealth = 100f;
 
     [Header("Team")]
-    [Tooltip("Tim objek ini. None = tidak tergabung tim (damage normal).")]
+    [Tooltip("Konfigurasi tim serialized (fallback untuk tag yang tidak dikenal).")]
     [SerializeField] private Team team = Team.None;
 
-    public Team Team => team;
+    // Nilai resolved saat runtime (tidak serialized).
+    private Team resolvedTeam = Team.None;
+    private bool identityResolved = false;
+
+    public Team Team => identityResolved ? resolvedTeam : team;
+    public Team ResolvedTeam => Team;
 
     public float CurrentHealth { get; private set; }
     public float MaxHealth => maxHealth;
@@ -36,28 +41,103 @@ public class CombatHealth : MonoBehaviour, IDamageable
 
     private void Awake()
     {
-        // Penentuan tim yang andal: gunakan nilai Inspector jika valid,
-        // lalu fallback ke tag GameObject. Nilai yang tidak valid dicatat (tidak diam-diam).
-        if (team == Team.None)
-        {
-            string t = tag.ToLowerInvariant();
-            if (t == "player" || t == "ally" || t == "teama")
-                team = Team.TeamA;
-            else if (t == "enemy" || t == "teamb")
-                team = Team.TeamB;
-        }
-
-        if (team == Team.None)
-        {
-            Debug.LogWarning($"[CombatHealth] {gameObject.name} tidak memiliki tim valid (tag='{tag}'). Friendly fire tidak akan diterapkan secara diam-diam.", this);
-        }
-        else
-        {
-            Debug.Log($"[CombatHealth] {gameObject.name} tim = {team}.", this);
-        }
+        ResolveTeamIdentity();
 
         CurrentHealth = maxHealth;
         TeamRegistry.Register(this);
+    }
+
+    private void ResolveTeamIdentity()
+    {
+        Team serialized = team;
+        Team recognized = ResolveRecognizedTeam();
+
+        if (TeamResolver.IsRecognizedTag(gameObject.tag) || recognized != Team.None)
+        {
+            // Tag dikenal: override nilai serialized yang konflik.
+            if (serialized != Team.None && serialized != recognized)
+            {
+                Debug.LogWarning($"[CombatHealth] {gameObject.name}: tag '{gameObject.tag}' maps to {recognized}, but serialized team is {serialized}. Using tag value.", this);
+            }
+            resolvedTeam = recognized;
+        }
+        else
+        {
+            // Tag tidak dikenal: fallback ke konfigurasi serialized.
+            // Dukung CombatHealth pada child dengan tag pada root.
+            Team inherited = ResolveRecognizedTeamFromAncestors();
+            if (inherited != Team.None)
+            {
+                if (serialized != Team.None && serialized != inherited)
+                {
+                    Debug.LogWarning($"[CombatHealth] {gameObject.name}: ancestor tag maps to {inherited}, but serialized team is {serialized}. Using ancestor tag value.", this);
+                }
+                resolvedTeam = inherited;
+            }
+            else
+            {
+                resolvedTeam = serialized;
+                if (serialized == Team.None)
+                {
+                    Debug.LogWarning($"[CombatHealth] {gameObject.name} tidak memiliki tim valid (tag='{gameObject.tag}'). Friendly fire tidak akan diterapkan secara diam-diam.", this);
+                }
+                else
+                {
+                    Debug.Log($"[CombatHealth] {gameObject.name} tim = {resolvedTeam} (serialized fallback).", this);
+                }
+            }
+        }
+
+        if (resolvedTeam != Team.None && (TeamResolver.IsRecognizedTag(gameObject.tag) || recognized != Team.None))
+        {
+            Debug.Log($"[CombatHealth] {gameObject.name} tim = {resolvedTeam} (tag '{gameObject.tag}').", this);
+        }
+
+        identityResolved = true;
+
+        if (resolvedTeam == Team.None)
+        {
+            Debug.LogWarning($"[CombatHealth] {gameObject.name} resolved team = None.", this);
+        }
+    }
+
+    private Team ResolveRecognizedTeam()
+    {
+        // Periksa tag GameObject ini sendiri.
+        Team t = TeamResolver.FromTag(gameObject.tag);
+        if (t != Team.None) return t;
+        return Team.None;
+    }
+
+    private Team ResolveRecognizedTeamFromAncestors()
+    {
+        Transform t = transform.parent;
+        while (t != null)
+        {
+            // Hindari inheritance lintas entity: berhenti jika bertemu CombatHealth lain.
+            var other = t.GetComponent<CombatHealth>();
+            if (other != null && other != this)
+                break;
+
+            Team mapped = TeamResolver.FromTag(t.gameObject.tag);
+            if (mapped != Team.None)
+                return mapped;
+
+            t = t.parent;
+        }
+        return Team.None;
+    }
+
+    private void OnEnable()
+    {
+        if (identityResolved)
+            TeamRegistry.Register(this);
+    }
+
+    private void OnDisable()
+    {
+        if (identityResolved)
+            TeamRegistry.Unregister(this);
     }
 
     private void OnDestroy()
@@ -78,17 +158,18 @@ public class CombatHealth : MonoBehaviour, IDamageable
         // Validasi tim sebelum menerapkan damage.
         if (attacker != null && attacker != this)
         {
+            Team myTeam = Team;
             // Tim yang sama: cegah friendly fire.
-            if (attacker.Team != Team.None && team != Team.None && attacker.Team == team)
+            if (attacker.Team != Team.None && myTeam != Team.None && attacker.Team == myTeam)
             {
-                Debug.LogWarning($"[CombatHealth] Friendly fire diblokir: {attacker.gameObject.name} ({attacker.Team}) -> {gameObject.name} ({team}).", this);
+                Debug.LogWarning($"[CombatHealth] Friendly fire diblokir: {attacker.gameObject.name} ({attacker.Team}) -> {gameObject.name} ({myTeam}).", this);
                 return;
             }
 
             // Tim tidak valid (None): perilaku eksplisit = tolak damage (tidak diam-diam mengizinkan).
-            if (attacker.Team == Team.None || team == Team.None)
+            if (attacker.Team == Team.None || myTeam == Team.None)
             {
-                Debug.LogWarning($"[CombatHealth] Damage diblokir karena tim tidak valid: attacker={attacker.gameObject.name} ({attacker.Team}), victim={gameObject.name} ({team}).", this);
+                Debug.LogWarning($"[CombatHealth] Damage diblokir karena tim tidak valid: attacker={attacker.gameObject.name} ({attacker.Team}), victim={gameObject.name} ({myTeam}).", this);
                 return;
             }
         }

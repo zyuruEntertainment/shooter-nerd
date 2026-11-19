@@ -89,6 +89,7 @@ public class ArcadeWeaponController : MonoBehaviour
     private bool loggedNoWeapon;
     private Transform botAimTarget;
     private Coroutine shootingRoutine;
+    private bool isBot;
 
     private readonly Color normalCrosshairColor = Color.black;
     private readonly Color targetCrosshairColor = Color.red;
@@ -113,7 +114,15 @@ public class ArcadeWeaponController : MonoBehaviour
         // Senjata hanya akan aktif setelah WeaponManager memanggil ApplyWeaponData.
         ClearWeapon();
 
-        if (aimCamera == null && autoFireFromInput && GetComponent<BotController>() == null)
+        isBot = GetComponent<BotController>() != null;
+        if (isBot)
+        {
+            // Bot tidak boleh menggunakan kamera player untuk aiming.
+            aimCamera = null;
+            autoFireFromInput = false;
+        }
+
+        if (aimCamera == null && autoFireFromInput && !isBot)
             aimCamera = Camera.main;
 
         if (spriteController == null)
@@ -144,7 +153,7 @@ public class ArcadeWeaponController : MonoBehaviour
 
         KeepCrosshairCentered();
 
-        if (aimCamera == null && autoFireFromInput && GetComponent<BotController>() == null)
+        if (aimCamera == null && autoFireFromInput && !isBot)
             Debug.LogError("Weapon: Kamera belum dipasang.", this);
 
         UpdateAmmoUI();
@@ -371,7 +380,7 @@ public class ArcadeWeaponController : MonoBehaviour
             );
         }
 
-        // Bot: raycast dari origin/muzzle menuju target (tidak pakai Camera.main).
+        // Bot: dedicated hit detection. RaycastAll, skip self colliders, first hit wins.
         if (botAimTarget == null)
             return false;
 
@@ -382,14 +391,26 @@ public class ArcadeWeaponController : MonoBehaviour
 
         Vector3 dir = toTarget / targetDist;
         float rayDist = Mathf.Min(range, targetDist + 0.5f);
-        return Physics.Raycast(
-            origin,
-            dir,
-            out hit,
-            rayDist,
-            hitboxMask,
-            QueryTriggerInteraction.Collide
-        );
+
+        // Sertakan layer default (0) agar player (layer 0) dan obstacle dapat terdeteksi.
+        int mask = hitboxMask.value | 1;
+        RaycastHit[] hits = Physics.RaycastAll(origin, dir, rayDist, mask, QueryTriggerInteraction.Collide);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (var h in hits)
+        {
+            if (h.collider == null) continue;
+            Transform ht = h.transform;
+
+            // Abaikan semua collider milik bot penembak.
+            if (ht == transform || ht.IsChildOf(transform) || transform.IsChildOf(ht))
+                continue;
+
+            hit = h;
+            return true;
+        }
+
+        return false;
     }
 
     public void Fire()
@@ -424,7 +445,10 @@ public class ArcadeWeaponController : MonoBehaviour
         // Diagnostik terkontrol: target raycast aktual saat bot menembak.
         if (botAimTarget != null && aimCamera == null)
         {
-            Debug.Log($"[ArcadeWeaponController] {gameObject.name} (bot) raycast target: {(hit.collider != null ? hit.collider.name : "none")} (intended {botAimTarget.name}).", this);
+            CombatHealth resolvedHealth = hit.collider != null ? hit.collider.GetComponentInParent<CombatHealth>() : null;
+            HitZone resolvedZone = hit.collider != null ? hit.collider.GetComponentInParent<HitZone>() : null;
+            CombatHealth owner = resolvedZone != null ? resolvedZone.Owner : resolvedHealth;
+            Debug.Log($"[BotWeapon] {gameObject.name}: intended={botAimTarget.name}, hit={(hit.collider != null ? hit.collider.name : "none")}, owner={(owner != null ? owner.gameObject.name : "none")} (team {(owner != null ? owner.Team.ToString() : "None")}).", this);
         }
 
         CombatHealth ownHealth = GetComponentInParent<CombatHealth>();
@@ -432,6 +456,9 @@ public class ArcadeWeaponController : MonoBehaviour
 
         if (zone != null)
         {
+            // Hindari self-damage.
+            if (zone.Owner != null && zone.Owner == ownHealth)
+                return;
             zone.ApplyDamage(damage, ownHealth);
             return;
         }
@@ -459,8 +486,16 @@ public class ArcadeWeaponController : MonoBehaviour
                 ownHealth != null && ownHealth.Team != Team.None &&
                 health.Team != Team.None && ownHealth.Team != health.Team;
 
-            targetingEnemy = zone != null ||
-                (health != null && health != ownHealth && isEnemyTeam);
+            // HitZone hanya dianggap musuh jika owner-nya musuh (team validation sama).
+            bool zoneIsEnemy = false;
+            if (zone != null && zone.Owner != null && ownHealth != null)
+            {
+                zoneIsEnemy = zone.Owner != ownHealth &&
+                    ownHealth.Team != Team.None && zone.Owner.Team != Team.None &&
+                    ownHealth.Team != zone.Owner.Team;
+            }
+
+            targetingEnemy = zoneIsEnemy || isEnemyTeam;
         }
 
         crosshair.color = targetingEnemy ? targetCrosshairColor : normalCrosshairColor;

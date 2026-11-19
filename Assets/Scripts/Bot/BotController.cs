@@ -502,7 +502,7 @@ public class BotController : MonoBehaviour
             return;
         }
 
-        CombatHealth enemy = TeamRegistry.FindNearestEnemy(transform.position, selfTeam);
+        CombatHealth enemy = TeamRegistry.FindNearestEnemy(transform.position, selfTeam, transform);
         playerTarget = enemy != null ? enemy.transform : null;
 
         if (enemy != null)

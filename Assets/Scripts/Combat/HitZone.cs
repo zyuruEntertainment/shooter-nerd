@@ -18,6 +18,7 @@ public class HitZone : MonoBehaviour
     private CombatHealth owner;
 
     public HitZoneType ZoneType => zoneType;
+    public CombatHealth Owner => owner;
 
     private void Awake()
     {
@@ -45,6 +46,10 @@ public class HitZone : MonoBehaviour
     )
     {
         if (owner == null || owner.IsDead)
+            return;
+
+        // Jangan pernah damage diri sendiri.
+        if (attacker != null && attacker == owner)
             return;
 
         // Validasi tim sebelum menerapkan damage (termasuk headshot multiplier).

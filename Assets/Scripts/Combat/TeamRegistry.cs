@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Registry sederhana untuk mencari target musuh berdasarkan tim.
@@ -7,6 +8,15 @@ using UnityEngine;
 public static class TeamRegistry
 {
     private static readonly List<CombatHealth> members = new List<CombatHealth>();
+    private static bool sceneHooked = false;
+
+    static TeamRegistry()
+    {
+        // Bersihkan registry saat scene baru dimuat (mencegah stale references).
+        SceneManager.sceneLoaded += (scene, mode) => members.Clear();
+        SceneManager.sceneUnloaded += (scene) => members.Clear();
+        sceneHooked = true;
+    }
 
     public static void Register(CombatHealth health)
     {
@@ -25,8 +35,18 @@ public static class TeamRegistry
         members.Remove(health);
     }
 
+    public static void Clear()
+    {
+        members.Clear();
+    }
+
     /// <summary>Cari musuh terdekat yang tim-nya berbeda (dan valid). Tidak pernah mengembalikan teammate.</summary>
     public static CombatHealth FindNearestEnemy(Vector3 position, Team selfTeam)
+    {
+        return FindNearestEnemy(position, selfTeam, null);
+    }
+
+    public static CombatHealth FindNearestEnemy(Vector3 position, Team selfTeam, Transform self)
     {
         if (selfTeam == Team.None)
         {
@@ -46,9 +66,12 @@ public static class TeamRegistry
                 continue;
             }
 
-            // Objek yang sudah dihancurkan / tidak aktif tidak boleh jadi target.
-            if (m.gameObject == null || !m.gameObject.activeInHierarchy)
+            // Objek yang sudah dihancurkan / tidak aktif / disabled tidak boleh jadi target.
+            if (m.gameObject == null || !m.gameObject.activeInHierarchy || !m.enabled)
+            {
+                members.RemoveAt(i);
                 continue;
+            }
 
             if (m.IsDead) continue;
 
@@ -57,6 +80,10 @@ public static class TeamRegistry
 
             // Jangan pernah kembalikan teammate.
             if (m.Team == selfTeam) continue;
+
+            // Jangan pernah kembalikan diri sendiri.
+            if (self != null && (m.transform == self || m.transform.IsChildOf(self) || self.IsChildOf(m.transform)))
+                continue;
 
             float sqr = (m.transform.position - position).sqrMagnitude;
             if (sqr < bestSqr)
